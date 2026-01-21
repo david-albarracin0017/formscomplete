@@ -48,4 +48,11 @@ export async function registrarUsuario(formData, fileUrls = []) {
     
     return { success: false, error: error.message || "Error interno del servidor" };
   }
+  
+}
+// Acción para eliminar
+export async function eliminarUsuario(id) {
+  await db.query('DELETE FROM documentos WHERE personaid = $1', [id]);
+  await db.query('DELETE FROM personas WHERE id = $1', [id]);
+  revalidatePath('/admin');
 }
