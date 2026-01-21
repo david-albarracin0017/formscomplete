@@ -56,3 +56,22 @@ export async function eliminarUsuario(id) {
   await db.query('DELETE FROM personas WHERE id = $1', [id]);
   revalidatePath('/admin');
 }
+
+export async function cambiarPassword(oldPass, newPass) {
+  try {
+    // 1. Verificar la antigua
+    const res = await db.query('SELECT password FROM admin_config WHERE usuario = $1', ['admin']);
+    const currentPass = res.rows[0].password;
+
+    if (oldPass !== currentPass) {
+      return { success: false, error: "La contraseña antigua es incorrecta" };
+    }
+
+    // 2. Actualizar a la nueva
+    await db.query('UPDATE admin_config SET password = $1 WHERE usuario = $1', [newPass, 'admin']);
+    
+    return { success: true };
+  } catch (error) {
+    return { success: false, error: "Error en el servidor" };
+  }
+}
