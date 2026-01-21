@@ -1,4 +1,6 @@
 'use server';
+import bcrypt from 'bcrypt';
+import { cookies } from 'next/headers';
 import { db } from './lib/db'; // Importamos el pool de conexión a Neon/Postgres
 
 export async function registrarUsuario(formData, fileUrls = []) {
@@ -57,21 +59,41 @@ export async function eliminarUsuario(id) {
   revalidatePath('/admin');
 }
 
-export async function cambiarPassword(oldPass, newPass) {
+export async function cambiarPasswordSeguro(oldPass, newPass) {
   try {
-    // 1. Verificar la antigua
-    const res = await db.query('SELECT password FROM admin_config WHERE usuario = $1', ['admin']);
-    const currentPass = res.rows[0].password;
+    const res = await db.query('SELECT password_hash FROM admins WHERE usuario = $1', ['admin']);
+    const user = res.rows[0];
 
-    if (oldPass !== currentPass) {
-      return { success: false, error: "La contraseña antigua es incorrecta" };
-    }
+    // Comparar clave antigua con el hash de la DB
+    const match = await bcrypt.compare(oldPass, user.password_hash);
+    if (!match) return { success: false, error: "Contraseña actual incorrecta" };
 
-    // 2. Actualizar a la nueva
-    await db.query('UPDATE admin_config SET password = $1 WHERE usuario = $1', [newPass, 'admin']);
-    
+    // Encriptar la nueva clave (10 rondas de seguridad)
+    const saltRounds = 10;
+    const newHash = await bcrypt.hash(newPass, saltRounds);
+
+    await db.query('UPDATE admins SET password_hash = $1 WHERE usuario = $2', [newHash, 'admin']);
     return { success: true };
   } catch (error) {
     return { success: false, error: "Error en el servidor" };
+  }
+}
+
+// Función para Login (puedes usar esto en una página de login.tsx)
+export async function loginAdmin(formData) {
+  const { usuario, password } = Object.fromEntries(formData);
+  const res = await db.query('SELECT * FROM admins WHERE usuario = $1', [usuario]);
+  
+  if (res.rows.length === 0) return { error: "Usuario no encontrado" };
+
+  const admin = res.rows[0];
+  const valid = await bcrypt.compare(password, admin.password_hash);
+
+  if (valid) {
+    // Aquí crearías una sesión con JWT o Cookies (simplificado para este ejemplo)
+    cookies().set('admin_session', 'active_token', { httpOnly: true, secure: true });
+    redirect('/admin');
+  } else {
+    return { error: "Contraseña incorrecta" };
   }
 }
