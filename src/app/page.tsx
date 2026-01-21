@@ -156,7 +156,9 @@ const manejarEnvio = async (e: React.FormEvent<HTMLFormElement>) => {
             <div id="step-1" className="grid grid-cols-2 gap-4 animate-in fade-in duration-500">
               <h3 className="col-span-2 font-bold border-b pb-2 text-black text-sm uppercase tracking-wide">Datos básicos</h3>
               <input name="Nombre" placeholder="Primer Nombre" required pattern="^[a-zA-ZáéíóúÁÉÍÓÚñÑ ]+$" value={formData.Nombre || ""} onChange={handleChange} className="p-2 border rounded text-gray-900 bg-white" />
+              <input name="SNombre" placeholder="Segundo Nombre"  pattern="^[a-zA-ZáéíóúÁÉÍÓÚñÑ ]+$" value={formData.Nombre || ""} onChange={handleChange} className="p-2 border rounded text-gray-900 bg-white" />
               <input name="Apellido" placeholder="Primer Apellido" required pattern="^[a-zA-ZáéíóúÁÉÍÓÚñÑ ]+$" value={formData.Apellido || ""} onChange={handleChange} className="p-2 border rounded text-gray-900 bg-white" />
+              <input name="SApellido" placeholder="Segundo Apellido" required pattern="^[a-zA-ZáéíóúÁÉÍÓÚñÑ ]+$" value={formData.Nombre || ""} onChange={handleChange} className="p-2 border rounded text-gray-900 bg-white" />
               <select name="Genero" required value={formData.Genero || ""} onChange={handleChange} className="p-2 border rounded text-gray-900 bg-white">
                 <option value="">Género</option>
                 <option>Masculino</option>
@@ -172,7 +174,7 @@ const manejarEnvio = async (e: React.FormEvent<HTMLFormElement>) => {
               <h3 className="col-span-full font-bold border-b pb-2 text-black text-sm uppercase tracking-wide">Identificación</h3>
               <select name="TipoIdentificacion" required value={formData.TipoIdentificacion || ""} onChange={handleChange} className="p-2 border rounded text-gray-900 bg-white">
                 <option value="">Tipo Documento</option>
-                <option>CC</option><option>TI</option><option>CE</option>
+                <option>CC</option><option>TI</option><option>CE</option><option>NIUP</option>
               </select>
               <input name="NumeroIdentificacion" placeholder="Número identificación" required pattern="[0-9]+" value={formData.NumeroIdentificacion || ""} onChange={handleChange} className="p-2 border rounded text-gray-900 bg-white" />
               <div className="flex flex-col">
@@ -192,7 +194,6 @@ const manejarEnvio = async (e: React.FormEvent<HTMLFormElement>) => {
               <input name="Direccion" placeholder="Dirección" required value={formData.Direccion || ""} onChange={handleChange} className="p-2 border rounded text-gray-900 bg-white" />
               <input name="Municipio" placeholder="Municipio" required pattern="^[a-zA-ZáéíóúÁÉÍÓÚñÑ ]+$" value={formData.Municipio || ""} onChange={handleChange} className="p-2 border rounded text-gray-900 bg-white" />
               <input name="EPS" placeholder="EPS" required pattern="^[a-zA-ZáéíóúÁÉÍÓÚñÑ ]+$" value={formData.EPS || ""} onChange={handleChange} className="p-2 border rounded text-gray-900 bg-white" />
-              <input name="AFP" placeholder="AFP" required pattern="^[a-zA-ZáéíóúÁÉÍÓÚñÑ ]+$" value={formData.AFP || ""} onChange={handleChange} className="p-2 border rounded text-gray-900 bg-white" />
             </div>
           )}
 
