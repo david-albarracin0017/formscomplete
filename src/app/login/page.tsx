@@ -46,7 +46,6 @@ export default function LoginPage() {
             </svg>
           </div>
           <h1 className="text-3xl font-black text-slate-800">Admin Panel</h1>
-          <p className="text-slate-400 mt-2 font-medium italic">Sindicato Nacional de Trabajadores</p>
         </div>
 
         <form onSubmit={handleLogin} className="space-y-5">
