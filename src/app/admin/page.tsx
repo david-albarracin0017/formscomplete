@@ -1,7 +1,8 @@
 import { db } from '../lib/db';
 import AdminClientButtons from './AdminClientButtons'; 
 // Asegúrate de tener esta función en tu actions.js
-import { eliminarUsuario } from '../actions'; 
+import { eliminarUsuario } from '../actions';
+import NextImage from 'next/image';
 
 export default async function AdminPanel() {
   // La consulta ahora incluye p.* para traer sangre, rh y emergencias
@@ -18,14 +19,35 @@ export default async function AdminPanel() {
 
   return (
     <div className="bg-gray-100 min-h-screen">
-      <nav className="bg-slate-900 shadow-2xl p-4 sticky top-0 z-50">
+        <nav className="bg-white border-b border-gray-200 p-4 sticky top-0 z-50 shadow-sm">
         <div className="max-w-7xl mx-auto flex justify-between items-center">
-          <div className="flex items-center gap-3">
-            <div className="bg-blue-600 p-2 rounded-lg text-white font-bold">A</div>
-            <h1 className="text-white font-bold text-xl tracking-tighter">SISTEMA<span className="text-blue-400">ADMIN</span></h1>
+          
+          {/* SECCIÓN DEL LOGO IZQUIERDA */}
+          <div className="flex items-center gap-4">
+            <div className="relative h-12 w-48">
+              {/* Usamos NextImage para evitar el error de tipo JSX */}
+              <NextImage 
+                src="/logo.png" 
+                alt="Logo Unicolmayor"
+                fill
+                sizes="(max-width: 768px) 100vw, 200px"
+                className="object-contain object-left"
+                priority
+              />
+            </div>
+            
+            <div className="h-8 w-1px bg-gray-200 mx-2 hidden md:block"></div>
+            
+            <h1 className="text-slate-800 font-black text-lg tracking-tighter hidden md:block uppercase">
+              Gestión <span className="text-blue-700">Administrativa</span>
+            </h1>
           </div>
-          {/* Este componente ahora recibirá todos los campos para el Excel */}
-          <AdminClientButtons registros={registros} />
+
+          {/* COMPONENTE DE BOTONES */}
+          <div className="flex items-center gap-2">
+            <AdminClientButtons registros={registros} />
+          </div>
+          
         </div>
       </nav>
 
