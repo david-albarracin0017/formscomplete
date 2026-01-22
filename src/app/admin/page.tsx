@@ -19,31 +19,30 @@ export default async function AdminPanel() {
 
   return (
     <div className="bg-gray-100 min-h-screen">
-        <nav className="bg-white border-b border-gray-200 p-4 sticky top-0 z-50 shadow-sm">
+       <nav className="bg-white border-b-4 border-[#EAB308] p-4 sticky top-0 z-50 shadow-md">
         <div className="max-w-7xl mx-auto flex justify-between items-center">
           
           {/* SECCIÓN DEL LOGO IZQUIERDA */}
           <div className="flex items-center gap-4">
-            <div className="relative h-12 w-48">
-              {/* Usamos NextImage para evitar el error de tipo JSX */}
+            <div className="relative h-14 w-56">
               <NextImage 
                 src="/logo.png" 
                 alt="Logo Unicolmayor"
                 fill
-                sizes="(max-width: 768px) 100vw, 200px"
+                sizes="(max-width: 768px) 100vw, 250px"
                 className="object-contain object-left"
                 priority
               />
             </div>
             
-            <div className="h-8 w-1px bg-gray-200 mx-2 hidden md:block"></div>
+            <div className="h-8 w-2px bg-slate-200 mx-2 hidden md:block"></div>
             
-            <h1 className="text-slate-800 font-black text-lg tracking-tighter hidden md:block uppercase">
-              Gestión <span className="text-blue-700">Administrativa</span>
+            <h1 className="text-[#003399] font-black text-xl tracking-tighter hidden md:block uppercase">
+              Gestión <span className="text-[#EAB308]">Administrativa</span>
             </h1>
           </div>
 
-          {/* COMPONENTE DE BOTONES */}
+          {/* COMPONENTE DE BOTONES (SEGURIDAD, EXCEL, SALIR) */}
           <div className="flex items-center gap-2">
             <AdminClientButtons registros={registros} />
           </div>
