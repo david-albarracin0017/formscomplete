@@ -1,7 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { cambiarPasswordSeguro } from '../actions';
+// Importamos las acciones necesarias
+import { cambiarPasswordSeguro, logoutAdmin } from '../actions'; 
 import XLSX from 'xlsx-js-style';
 
 interface AdminClientButtonsProps {
@@ -67,7 +68,7 @@ export default function AdminClientButtons({ registros }: AdminClientButtonsProp
       setShowModal(false);
       setForm({ oldPass: '', newPass: '', confirmPass: '' });
     } else {
-      setMensaje({ text: res.error || "Error desconocido", isError: true }); // Aquí se corrigió el error de TS
+      setMensaje({ text: res.error || "Error desconocido", isError: true });
     }
   };
 
@@ -76,15 +77,25 @@ export default function AdminClientButtons({ registros }: AdminClientButtonsProp
       <button onClick={() => setShowModal(true)} className="text-slate-400 hover:text-white text-xs border border-slate-700 px-3 py-2 rounded-lg transition-all">
         Seguridad
       </button>
+      
       <button onClick={exportarExcel} className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg text-xs font-bold transition-all shadow-lg">
         Excel
       </button>
-      <a href="/login" className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg text-xs font-bold">
+
+      {/* BOTÓN DE SALIR CORREGIDO */}
+      <button 
+        onClick={async () => {
+            if(confirm("¿Deseas cerrar la sesión?")) {
+                await logoutAdmin();
+            }
+        }} 
+        className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg text-xs font-bold transition-all"
+      >
         Salir
-      </a>
+      </button>
 
       {showModal && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-100 p-4"> {/* Corregido z-100 */}
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-[100] p-4">
           <div className="bg-white rounded-3xl p-8 max-w-sm w-full shadow-2xl">
             <h3 className="text-2xl font-black text-gray-900 mb-6">Cambiar Clave</h3>
             <form onSubmit={handleCambioPass} className="space-y-4">

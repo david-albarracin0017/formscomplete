@@ -1,6 +1,6 @@
 'use server';
 
-import bcrypt from 'bcryptjs'; // Cambiado a bcryptjs para compatibilidad con Vercel
+import bcrypt from 'bcryptjs';
 import { cookies } from 'next/headers';
 import { db } from './lib/db';
 import { revalidatePath } from 'next/cache';
@@ -19,7 +19,6 @@ export async function reiniciarSistemaAdmin() {
     `);
 
     const hashGenerado = await bcrypt.hash("admin123", 10);
-
     await db.query(
       'INSERT INTO admins (usuario, password_hash) VALUES ($1, $2)',
       ['admin', hashGenerado]
@@ -34,9 +33,8 @@ export async function reiniciarSistemaAdmin() {
 
 // --- 2. LOGIN DE ADMINISTRADOR ---
 export async function loginAdmin(formData) {
-  const data = Object.fromEntries(formData.entries());
-  const usuario = data.usuario?.trim();
-  const password = data.password?.trim();
+  const usuario = formData.get('usuario')?.trim();
+  const password = formData.get('password')?.trim();
 
   try {
     const res = await db.query('SELECT * FROM admins WHERE usuario = $1', [usuario]);
@@ -52,21 +50,27 @@ export async function loginAdmin(formData) {
       return { error: "Contraseña incorrecta." };
     }
 
-    // Crear la cookie de sesión
-    cookies().set('admin_session', 'active_token_xyz', { 
+    // --- LA SOLUCIÓN ESTÁ AQUÍ ---
+    // En las versiones nuevas de Next.js, cookies() DEBE llevar await
+    const cookieStore = await cookies(); 
+    
+    cookieStore.set('admin_session', 'active_token_xyz', { 
       httpOnly: true, 
-      secure: true, // Siempre true para Vercel (HTTPS)
+      secure: true, 
       sameSite: 'lax',
       path: '/',
-      maxAge: 60 * 60 * 24 
+      maxAge: 60 * 60 * 24 // 24 horas
     });
     
   } catch (error) {
+    // Si el error es un redirect interno de Next.js, lo lanzamos para que funcione
+    if (error.digest?.includes('NEXT_REDIRECT')) throw error;
+    
     console.error("Error en login:", error);
     return { error: "Error de conexión con la base de datos." };
   }
 
-  // El redirect debe estar fuera del try/catch
+  // Redirigimos fuera del bloque try/catch
   redirect('/admin');
 }
 
@@ -92,7 +96,7 @@ export async function cambiarPasswordSeguro(oldPass, newPass) {
 
 // --- 4. REGISTRO DE USUARIOS ---
 export async function registrarUsuario(formData, fileUrls = []) {
-  const data = Object.fromEntries(formData.entries());
+  // Extraemos los datos usando .get() para asegurar compatibilidad
   try {
     const res = await db.query(`
       INSERT INTO personas (
@@ -102,22 +106,37 @@ export async function registrarUsuario(formData, fileUrls = []) {
       ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
       RETURNING id;
     `, [
-      data.nombre, data.segundonombre || '', data.apellido, data.segundoapellido || '',
-      data.genero, data.telefono, data.correo, data.tipoidentificacion, data.numeroidentificacion,
-      data.fechanacimiento, data.fechaexpedicion, data.direccion, data.municipio,
-      data.eps, data.contactoemergencia, data.contactotelefono
+      formData.get('Nombre'),
+      formData.get('SNombre') || '',
+      formData.get('Apellido'),
+      formData.get('SApellido') || '',
+      formData.get('Genero'),
+      formData.get('Telefono'),
+      formData.get('Correo'),
+      formData.get('TipoIdentificacion'),
+      formData.get('NumeroIdentificacion'),
+      formData.get('FechaNacimiento'),
+      formData.get('FechaExpedicion'),
+      formData.get('Direccion'),
+      formData.get('Municipio'),
+      formData.get('EPS'),
+      formData.get('ContactoEmergencia'),
+      formData.get('ContactoTelefono')
     ]);
 
     const personaId = res.rows[0].id;
 
-    for (const file of fileUrls) {
-      await db.query('INSERT INTO documentos (personaid, nombrearchivo, ruta) VALUES ($1, $2, $3)', 
-      [personaId, file.name, file.url]);
+    if (fileUrls.length > 0) {
+      for (const file of fileUrls) {
+        await db.query('INSERT INTO documentos (personaid, nombrearchivo, ruta) VALUES ($1, $2, $3)', 
+        [personaId, file.name, file.url]);
+      }
     }
 
     revalidatePath('/admin');
     return { success: true };
   } catch (error) {
+    console.error("Error al registrar:", error);
     return { success: false, error: error.message };
   }
 }
@@ -131,4 +150,12 @@ export async function eliminarUsuario(id) {
   } catch (error) {
     return { success: false, error: error.message };
   }
+}
+
+// actions.js
+
+export async function logoutAdmin() {
+  const cookieStore = await cookies();
+  cookieStore.delete('admin_session'); // Elimina la cookie por nombre
+  redirect('/login');
 }
