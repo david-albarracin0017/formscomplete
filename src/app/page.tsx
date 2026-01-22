@@ -2,6 +2,7 @@
 import { useState, ChangeEvent } from 'react';
 import { registrarUsuario } from './actions';
 import { UploadButton } from "./utils/uploadthing";
+import NextImage from 'next/image';
 
 export default function MultiStepPage() {
   const [step, setStep] = useState(1);
@@ -82,18 +83,50 @@ export default function MultiStepPage() {
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col font-sans">
       {/* NAVBAR */}
-      <nav className="bg-blue-800 border-b px-6 py-4 flex justify-between items-center sticky top-0 z-50">
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white font-bold">L</div>
-          <span className="font-bold text-lg text-shadow-indigo-50 tracking-tight">SISTEMA</span>
+      <nav className="bg-[#003399] border-b-4 border-[#EAB308] px-6 py-3 flex justify-between items-center sticky top-0 z-50 shadow-lg">
+      {/* SECCIÓN DEL LOGO */}
+      <div className="flex items-center gap-4">
+        <div className="relative h-12 w-48 bg-white p-1 rounded-lg">
+          <NextImage 
+            src="/logo.png" 
+            alt="Logo Unicolmayor"
+            fill
+            className="object-contain p-1"
+            priority
+          />
         </div>
-        <button onClick={() => setMenuOpen(!menuOpen)} className="md:hidden p-2 text-shadow-indigo-50">
-          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16m-7 6h7"/></svg>
-        </button>
-        <div className={`${menuOpen ? 'flex' : 'hidden'} md:flex gap-6`}>
-          <a href="#" className="text-sm font-bold text-white hover:text-blue-600">Inicio</a>
-        </div>
-      </nav>
+        <div className="h-6 w-1px bg-blue-400/50 mx-2 hidden sm:block"></div>
+        <span className="font-black text-white text-lg tracking-tighter uppercase hidden sm:block">
+          Inscripciones
+        </span>
+      </div>
+
+      {/* BOTÓN MÓVIL */}
+      <button 
+        onClick={() => setMenuOpen(!menuOpen)} 
+        className="md:hidden p-2 text-[#EAB308] hover:bg-blue-900 rounded-xl transition-colors"
+      >
+        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16m-7 6h7"/>
+        </svg>
+      </button>
+
+      {/* MENÚ DE NAVEGACIÓN */}
+      <div className={`${menuOpen ? 'flex' : 'hidden'} md:flex items-center gap-6`}>
+        <a 
+          href="#" 
+          className="text-xs font-black text-white hover:text-[#EAB308] uppercase tracking-widest transition-colors"
+        >
+          Inicio
+        </a>
+        <a 
+          href="/login" 
+          className="text-xs font-black bg-[#EAB308] text-[#003399] px-4 py-2 rounded-full uppercase tracking-widest hover:bg-white transition-all shadow-md"
+        >
+          Admin
+        </a>
+      </div>
+    </nav>
 
       <main className="flex-1 flex items-center justify-center p-4">
         <div className="bg-white p-6 md:p-10 rounded-3xl shadow-xl max-w-xl w-full border border-slate-100">
