@@ -119,12 +119,6 @@ export default function MultiStepPage() {
         >
           Inicio
         </a>
-        <a 
-          href="/login" 
-          className="text-xs font-black bg-[#EAB308] text-[#003399] px-4 py-2 rounded-full uppercase tracking-widest hover:bg-white transition-all shadow-md"
-        >
-          Admin
-        </a>
       </div>
     </nav>
 
