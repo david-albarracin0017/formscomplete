@@ -1,262 +1,284 @@
 'use client';
-import { useEffect, useState, ChangeEvent } from 'react';
+import { useState, ChangeEvent } from 'react';
 import { registrarUsuario } from './actions';
 import { UploadButton } from "./utils/uploadthing";
-
-// Definimos la estructura de los datos para que TypeScript no marque error
-interface FormDataState {
-  Nombre?: string;
-  Apellido?: string;
-  Genero?: string;
-  Telefono?: string;
-  Correo?: string;
-  TipoIdentificacion?: string;
-  NumeroIdentificacion?: string;
-  FechaNacimiento?: string;
-  FechaExpedicion?: string;
-  Direccion?: string;
-  Municipio?: string;
-  EPS?: string;
-  AFP?: string;
-  ARL?: string;
-  ContactoEmergencia?: string;
-  ContactoTelefono?: string;
-}
 
 export default function MultiStepPage() {
   const [step, setStep] = useState(1);
   const [fileUrls, setFileUrls] = useState<{ name: string; url: string }[]>([]);
-  const [formData, setFormData] = useState<FormDataState>({});
-  const [showSuccess, setShowSuccess] = useState(false);
+  const [formData, setFormData] = useState<any>({});
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
 
-  // Maneja los cambios de input con tipos de React
+  const hoy = new Date().toISOString().split('T')[0];
+
+  // --- REGLAS DE VALIDACIÓN ---
+  const soloLetras = "^[a-zA-ZáéíóúÁÉÍÓÚñÑ ]+$";
+  const soloNumeros = "^[0-9]+$";
+  const telefonoRegEx = "^[0-9]{10,15}$"; // Mínimo 10, máximo 15 dígitos
+  const documentoRegEx = "^[0-9]{8,10}$"; // Mínimo 8, máximo 10 dígitos
+
   const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const validarPaso = () => {
+  const validarYAvanzar = () => {
     const selector = `#step-${step}`;
-    // Seleccionamos ambos tipos de elementos
     const inputs = document.querySelectorAll(`${selector} input, ${selector} select`) as NodeListOf<HTMLInputElement | HTMLSelectElement>;
-    let valido = true;
-
-    inputs.forEach(input => {
-      // 1. Verificamos si es obligatorio
-      if (input.required && !input.checkValidity()) {
-        input.reportValidity();
-        valido = false;
-      }
-      
-      // 2. Verificamos el pattern solo si el elemento es un HTMLInputElement (los select no tienen pattern)
-      if (input instanceof HTMLInputElement && input.pattern) {
-        if (!input.checkValidity()) {
-          input.reportValidity();
-          valido = false;
-        }
-      }
-    });
-
-    if (valido) setStep(step + 1);
-  };
-
-  const reiniciarFormulario = () => {
-    setFormData({});
-    setStep(1);
-    setError("");
-  };
-
-  useEffect(() => {
-    if (showSuccess) {
-      const timer = setTimeout(() => setShowSuccess(false), 5000);
-      return () => clearTimeout(timer);
-    }
-  }, [showSuccess]);
-
-const manejarEnvio = async (e: React.FormEvent<HTMLFormElement>) => {
-  e.preventDefault();
-  
-  // 1. Verificación: Si el array de URLs de UploadThing está vacío, no permite continuar
-  if (fileUrls.length === 0) {
-    setError("Por favor, sube los documentos antes de finalizar.");
-    return;
-  }
-
-  setLoading(true);
-  setError("");
-
-  try {
-    // 2. Preparación de los datos del formulario (textos)
-    const finalFormData = new FormData();
-    Object.entries(formData).forEach(([key, value]) => {
-      finalFormData.append(key, value as string);
-    });
-
-    // 3. DIFERENCIA CLAVE: Se envían dos argumentos. 
-    // finalFormData va a la tabla 'personas' y fileUrls a la tabla 'documentos'
-    const res = await registrarUsuario(finalFormData, fileUrls);
     
-    if (!res.success) {
-      setError(res.error || "Error al registrar");
-    } else {
-      // 4. Limpieza del formulario y de los archivos tras el éxito en la DB
-      setShowSuccess(true);
-      setStep(1);
-      setFormData({});
-      setFileUrls([]); 
+    let formularioValido = true;
+    inputs.forEach(input => {
+      if (!input.checkValidity()) {
+        input.reportValidity();
+        formularioValido = false;
+      }
+    });
+
+    if (!formularioValido) return;
+
+    if (step === 2) {
+      const fn = new Date(formData.fechanacimiento);
+      const fe = new Date(formData.fechaexpedicion);
+      if (formData.fechanacimiento >= hoy) {
+        setError("La fecha de nacimiento debe ser anterior a hoy.");
+        return;
+      }
+      let edad = fe.getFullYear() - fn.getFullYear();
+      if (fe.getMonth() < fn.getMonth() || (fe.getMonth() === fn.getMonth() && fe.getDate() < fn.getDate())) {
+        edad--;
+      }
+      if (edad < 18) {
+        setError("El usuario debe ser mayor de 18 años según su fecha de expedición.");
+        return;
+      }
     }
-  } catch (err) {
-    setError("Error crítico en el envío");
-  } finally {
-    setLoading(false);
-  }
-};
+
+    setError("");
+    setStep(step + 1);
+  };
+
+  const manejarEnvio = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (fileUrls.length === 0) {
+      setError("Debes subir los documentos requeridos.");
+      return;
+    }
+    
+    setLoading(true);
+    const data = new FormData();
+    Object.entries(formData).forEach(([k, v]) => data.append(k, v as string));
+
+    const res = await registrarUsuario(data, fileUrls);
+    if (res.success) {
+      alert("¡Registro guardado con éxito!");
+      window.location.reload();
+    } else {
+      setError(res.error || "Error al registrar");
+      setLoading(false);
+    }
+  };
 
   return (
-    <main className="min-h-screen bg-gray-100 flex items-center justify-center p-4">
-      {/* Alerta de Éxito */}
-      {showSuccess && (
-        <div className="fixed top-5 right-5 z-50 animate-in fade-in slide-in-from-top duration-500">
-          <div className="bg-green-600 text-white px-6 py-4 rounded-lg shadow-2xl flex items-center space-x-3 border-2 border-green-400">
-            <div className="bg-white text-green-600 rounded-full p-1">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-              </svg>
-            </div>
-            <div>
-              <p className="font-bold text-lg">¡Registro Exitoso!</p>
-              <p className="text-sm opacity-90">Los datos se guardaron en Drive y SQL.</p>
-            </div>
+    <div className="min-h-screen bg-slate-50 flex flex-col font-sans">
+      {/* NAVBAR */}
+      <nav className="bg-blue-800 border-b px-6 py-4 flex justify-between items-center sticky top-0 z-50">
+        <div className="flex items-center gap-2">
+          <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white font-bold">L</div>
+          <span className="font-bold text-lg text-shadow-indigo-50 tracking-tight">SISTEMA</span>
+        </div>
+        <button onClick={() => setMenuOpen(!menuOpen)} className="md:hidden p-2 text-shadow-indigo-50">
+          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16m-7 6h7"/></svg>
+        </button>
+        <div className={`${menuOpen ? 'flex' : 'hidden'} md:flex gap-6`}>
+          <a href="#" className="text-sm font-bold text-white hover:text-blue-600">Inicio</a>
+        </div>
+      </nav>
+
+      <main className="flex-1 flex items-center justify-center p-4">
+        <div className="bg-white p-6 md:p-10 rounded-3xl shadow-xl max-w-xl w-full border border-slate-100">
+          
+          <div className="flex gap-2 mb-8">
+            {[1, 2, 3, 4].map(s => (
+              <div key={s} className={`h-1.5 flex-1 rounded-full ${step >= s ? 'bg-blue-600' : 'bg-slate-100'}`} />
+            ))}
           </div>
-        </div>
-      )}
 
-      <div className="bg-white p-8 rounded-lg shadow-lg max-w-2xl w-full">
-        <h2 className="text-2xl font-bold text-center mb-6 text-blue-600">Registro de Datos Personales</h2>
+          {error && <div className="bg-red-50 text-red-600 p-4 rounded-xl text-xs font-bold mb-6 border border-red-100">{error}</div>}
 
-        {/* Círculos de Progreso */}
-        <div className="flex items-center justify-center mb-8 space-x-2">
-          {[1, 2, 3, 4].map((num) => (
-            <div key={num} className="flex items-center">
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center border ${step >= num ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-500'}`}>
-                {num}
+          <form onSubmit={manejarEnvio}>
+            {/* PASO 1: NOMBRES Y GÉNERO */}
+            {step === 1 && (
+              <div id="step-1" className="grid grid-cols-2 gap-3 animate-in fade-in duration-500">
+                <h2 className="col-span-2 text-xl font-bold text-slate-800 mb-2">Datos Personales</h2>
+                <input name="nombre" placeholder="Primer Nombre" required pattern={soloLetras} value={formData.nombre || ""} onChange={handleChange} className="p-3 border rounded-xl text-black bg-slate-50 outline-none" title="Solo se permiten letras" />
+                <input name="segundonombre" placeholder="Segundo Nombre" pattern={soloLetras} value={formData.segundonombre || ""} onChange={handleChange} className="p-3 border rounded-xl text-black bg-slate-50 outline-none" title="Solo se permiten letras" />
+                <input name="apellido" placeholder="Primer Apellido" required pattern={soloLetras} value={formData.apellido || ""} onChange={handleChange} className="p-3 border rounded-xl text-black bg-slate-50" title="Solo se permiten letras" />
+                <input name="segundoapellido" placeholder="Segundo Apellido" pattern={soloLetras} value={formData.segundoapellido || ""} onChange={handleChange} className="p-3 border rounded-xl text-black bg-slate-50" title="Solo se permiten letras" />
+                <select name="genero" required value={formData.genero || ""} onChange={handleChange} className="col-span-2 p-3 border rounded-xl text-black bg-slate-50">
+                  <option value="">Seleccione Género</option>
+                  <option>Masculino</option><option>Femenino</option><option>Otro</option>
+                </select>
+                <input name="telefono" placeholder="Teléfono (Mín. 10 dígitos)" required pattern={telefonoRegEx} value={formData.telefono || ""} onChange={handleChange} className="p-3 border rounded-xl text-black bg-slate-50" title="Debe tener al menos 10 números" />
+                <input name="correo" type="email" placeholder="Correo institucional" required value={formData.correo || ""} onChange={handleChange} className="p-3 border rounded-xl text-black bg-slate-50" />
+                <button type="button" onClick={validarYAvanzar} className="col-span-2 bg-blue-600 text-white p-4 rounded-xl font-bold mt-2 hover:bg-blue-700 transition-colors">Siguiente</button>
               </div>
-              {num < 4 && <div className={`w-10 h-1 ${step > num ? 'bg-blue-600' : 'bg-gray-200'}`}></div>}
-            </div>
-          ))}
-        </div>
-
-        {error && <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4 text-center font-medium">{error}</div>}
-
-        <form onSubmit={manejarEnvio}>
-          
-          {step === 1 && (
-            <div id="step-1" className="grid grid-cols-2 gap-4 animate-in fade-in duration-500">
-              <h3 className="col-span-2 font-bold border-b pb-2 text-black text-sm uppercase tracking-wide">Datos básicos</h3>
-              <input name="Nombre" placeholder="Primer Nombre" required pattern="^[a-zA-ZáéíóúÁÉÍÓÚñÑ ]+$" value={formData.Nombre || ""} onChange={handleChange} className="p-2 border rounded text-gray-900 bg-white" />
-              <input name="SNombre" placeholder="Segundo Nombre"  pattern="^[a-zA-ZáéíóúÁÉÍÓÚñÑ ]+$" value={formData.Nombre || ""} onChange={handleChange} className="p-2 border rounded text-gray-900 bg-white" />
-              <input name="Apellido" placeholder="Primer Apellido" required pattern="^[a-zA-ZáéíóúÁÉÍÓÚñÑ ]+$" value={formData.Apellido || ""} onChange={handleChange} className="p-2 border rounded text-gray-900 bg-white" />
-              <input name="SApellido" placeholder="Segundo Apellido" required pattern="^[a-zA-ZáéíóúÁÉÍÓÚñÑ ]+$" value={formData.Nombre || ""} onChange={handleChange} className="p-2 border rounded text-gray-900 bg-white" />
-              <select name="Genero" required value={formData.Genero || ""} onChange={handleChange} className="p-2 border rounded text-gray-900 bg-white">
-                <option value="">Género</option>
-                <option>Masculino</option>
-                <option>Femenino</option>
-              </select>
-              <input name="Telefono" placeholder="Teléfono" required pattern="[0-9]{7,15}" value={formData.Telefono || ""} onChange={handleChange} className="p-2 border rounded text-gray-900 bg-white" />
-              <input type="email" name="Correo" placeholder="Correo institucional" required value={formData.Correo || ""} onChange={handleChange} className="p-2 border rounded col-span-2 text-gray-900 bg-white" />
-            </div>
-          )}
-
-          {step === 2 && (
-            <div id="step-2" className="grid grid-cols-1 md:grid-cols-2 gap-4 animate-in slide-in-from-right duration-300">
-              <h3 className="col-span-full font-bold border-b pb-2 text-black text-sm uppercase tracking-wide">Identificación</h3>
-              <select name="TipoIdentificacion" required value={formData.TipoIdentificacion || ""} onChange={handleChange} className="p-2 border rounded text-gray-900 bg-white">
-                <option value="">Tipo Documento</option>
-                <option>CC</option><option>TI</option><option>CE</option><option>NIUP</option>
-              </select>
-              <input name="NumeroIdentificacion" placeholder="Número identificación" required pattern="[0-9]+" value={formData.NumeroIdentificacion || ""} onChange={handleChange} className="p-2 border rounded text-gray-900 bg-white" />
-              <div className="flex flex-col">
-                <label className="text-xs font-semibold text-gray-500 mb-1">Fecha de Nacimiento</label>
-                <input type="date" name="FechaNacimiento" required value={formData.FechaNacimiento || ""} onChange={handleChange} className="p-2 border rounded text-gray-900 bg-white" />
-              </div>
-              <div className="flex flex-col">
-                <label className="text-xs font-semibold text-gray-500 mb-1">Fecha de Expedición</label>
-                <input type="date" name="FechaExpedicion" required value={formData.FechaExpedicion || ""} onChange={handleChange} className="p-2 border rounded text-gray-900 bg-white" />
-              </div>
-            </div>
-          )}
-
-          {step === 3 && (
-            <div id="step-3" className="grid grid-cols-1 md:grid-cols-2 gap-4 animate-in slide-in-from-right duration-300">
-              <h3 className="col-span-full font-bold border-b pb-2 text-gray-700 text-sm uppercase tracking-wide">Residencia y afiliación</h3>
-              <input name="Direccion" placeholder="Dirección" required value={formData.Direccion || ""} onChange={handleChange} className="p-2 border rounded text-gray-900 bg-white" />
-              <input name="Municipio" placeholder="Municipio" required pattern="^[a-zA-ZáéíóúÁÉÍÓÚñÑ ]+$" value={formData.Municipio || ""} onChange={handleChange} className="p-2 border rounded text-gray-900 bg-white" />
-              <input name="EPS" placeholder="EPS" required pattern="^[a-zA-ZáéíóúÁÉÍÓÚñÑ ]+$" value={formData.EPS || ""} onChange={handleChange} className="p-2 border rounded text-gray-900 bg-white" />
-            </div>
-          )}
-
-         {step === 4 && (
-          <div id="step-4" className="space-y-6 animate-in slide-in-from-right duration-300">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <h3 className="col-span-full font-bold border-b pb-2 text-gray-700 text-sm uppercase tracking-wide">Contacto de emergencia</h3>
-              <input name="ContactoEmergencia" placeholder="Nombre completo" required value={formData.ContactoEmergencia || ""} onChange={handleChange} className="p-2 border rounded text-gray-900 bg-white" />
-              <input name="ContactoTelefono" placeholder="Teléfono" required value={formData.ContactoTelefono || ""} onChange={handleChange} className="p-2 border rounded text-gray-900 bg-white" />
-            </div>
-    
-          <div className="bg-blue-50 p-6 rounded-lg border-2 border-dashed border-blue-200">
-              <h3 className="font-bold mb-4 text-blue-800 text-sm">Documentación Requerida</h3>
-              
-              <UploadButton
-                endpoint="pdfUploader"
-                // Personalización de textos
-                content={{
-                  button({ ready }) {
-                    if (ready) return "";
-                    return "Cargando configurador...";
-                  },
-                  allowedContent:"Subir certificados de afiliación EPS y AFP"
-                  
-                }}
-                // Personalización de estilos para asegurar visibilidad
-                appearance={{
-                  button: "bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm transition-all w-full md:w-auto",
-                  allowedContent: "text-blue-600 text-xs mt-2 font-medium"
-                }}
-                onClientUploadComplete={(res) => {
-                  if (res) {
-                    setFileUrls(res.map(f => ({ name: f.name, url: f.url })));
-                    alert("Certificados cargados correctamente");
-                  }
-                }}
-                onUploadError={(error: Error) => {
-                  alert(`Error al subir: ${error.message}`);
-                }}
-              />
-                {fileUrls.length > 0 && (
-                  <p className="text-xs text-green-600 mt-2">{fileUrls.length} archivos listos.</p>
-                )}
-              </div>
-            </div>
-          )}
-          
-          <div className="flex justify-between mt-8">
-            {step > 1 && (
-              <button type="button" onClick={() => setStep(step - 1)} className="bg-gray-500 hover:bg-gray-600 text-white px-6 py-2 rounded font-medium transition-colors">Atrás</button>
             )}
-            <div className="ml-auto">
-              {step < 4 ? (
-                <button type="button" onClick={validarPaso} className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded font-medium transition-colors">Siguiente</button>
-              ) : (
-                <button type="submit" disabled={loading} className={`${loading ? 'bg-gray-400' : 'bg-green-600 hover:bg-green-700'} text-white px-6 py-2 rounded font-medium transition-colors`}>
-                  {loading ? 'Guardando...' : 'Finalizar Registro'}
-                </button>
-              )}
-            </div>
-          </div>
-        </form>
-      </div>
-    </main>
+
+            {/* PASO 2: DOCUMENTO Y FECHAS */}
+            {step === 2 && (
+              <div id="step-2" className="space-y-4 animate-in slide-in-from-right-4 duration-500">
+                <h2 className="text-xl font-bold text-slate-800 mb-2">Identificación</h2>
+                
+                <select 
+                  name="tipoidentificacion" 
+                  required 
+                  value={formData.tipoidentificacion || ""} 
+                  onChange={handleChange} 
+                  className="w-full p-3 border rounded-xl text-black bg-slate-50 outline-none"
+                >
+                  <option value="">Tipo Documento</option>
+                  <option>Cédula de Ciudadanía</option>
+                  <option>Tarjeta de Identidad</option>
+                  <option>Cédula de Extranjería</option>
+                  <option>Pasaporte</option>
+                </select>
+
+                <input 
+                  name="numeroidentificacion" 
+                  placeholder="Número de Documento (8 a 10 dígitos)" 
+                  required 
+                  pattern="^[0-9]{8,10}$" 
+                  value={formData.numeroidentificacion || ""} 
+                  onChange={handleChange} 
+                  className="w-full p-3 border rounded-xl text-black bg-slate-50 outline-none" 
+                  title="El documento debe tener entre 8 y 10 números" 
+                />
+
+                <div>
+                  <label className="text-[10px] font-bold text-slate-400 block mb-1 uppercase">Fecha de Nacimiento</label>
+                  <input 
+                    name="fechanacimiento" 
+                    type="date" 
+                    max={hoy} 
+                    required 
+                    value={formData.fechanacimiento || ""} 
+                    onChange={handleChange} 
+                    className="w-full p-3 border rounded-xl text-black bg-slate-50 outline-none" 
+                  />
+                </div>
+
+                <div>
+                  <label className="text-[10px] font-bold text-slate-400 block mb-1 uppercase">Fecha Expedición Documento</label>
+                  <input 
+                    name="fechaexpedicion" 
+                    type="date" 
+                    required 
+                    value={formData.fechaexpedicion || ""} 
+                    onChange={handleChange} 
+                    className="w-full p-3 border rounded-xl text-black bg-slate-50 outline-none" 
+                  />
+                </div>
+
+                <div className="flex gap-2 pt-2">
+                  <button 
+                    type="button" 
+                    onClick={() => setStep(1)} 
+                    className="flex-1 bg-slate-100 text-slate-500 p-4 rounded-xl font-bold hover:bg-slate-200 transition-colors"
+                  >
+                    Atrás
+                  </button>
+                  <button 
+                    type="button" 
+                    onClick={validarYAvanzar} 
+                    className="flex-1 bg-blue-600 text-white p-4 rounded-xl font-bold hover:bg-blue-700 transition-colors"
+                  >
+                    Siguiente
+                  </button>
+                </div>
+              </div>
+            )}
+            {/* PASO 3: RESIDENCIA Y SALUD */}
+            {step === 3 && (
+              <div id="step-3" className="space-y-3 animate-in slide-in-from-right-4 duration-500">
+                <h2 className="text-xl font-bold text-slate-800 mb-2">Residencia y Salud</h2>
+                <input name="direccion" placeholder="Dirección de Residencia" required value={formData.direccion || ""} onChange={handleChange} className="w-full p-3 border rounded-xl text-black bg-slate-50 outline-none" />
+                <input name="municipio" placeholder="Municipio" required pattern={soloLetras} value={formData.municipio || ""} onChange={handleChange} className="w-full p-3 border rounded-xl text-black bg-slate-50" title="Solo letras permitidas" />
+                <input name="eps" placeholder="Nombre de EPS" required pattern={soloLetras} value={formData.eps || ""} onChange={handleChange} className="w-full p-3 border rounded-xl text-black bg-slate-50" title="Solo letras permitidas" />
+                <div className="grid grid-cols-2 gap-2">
+                  <select name="tiposangre" required value={formData.tiposangre || ""} onChange={handleChange} className="p-3 border rounded-xl text-black bg-slate-50">
+                    <option value="">Tipo Sangre</option>
+                    <option>O</option><option>A</option><option>B</option><option>AB</option>
+                  </select>
+                  <select name="factorrh" required value={formData.factorrh || ""} onChange={handleChange} className="p-3 border rounded-xl text-black bg-slate-50">
+                    <option value="">Factor RH</option>
+                    <option>+</option><option>-</option>
+                  </select>
+                </div>
+                <div className="flex gap-2 pt-2">
+                  <button type="button" onClick={() => setStep(2)} className="flex-1 bg-slate-100 text-slate-500 p-4 rounded-xl font-bold">Atrás</button>
+                  <button type="button" onClick={validarYAvanzar} className="flex-1 bg-blue-600 text-white p-4 rounded-xl font-bold">Siguiente</button>
+                </div>
+              </div>
+            )}
+
+            {/* PASO 4: EMERGENCIA Y ARCHIVOS ACUMULABLES */}
+            {step === 4 && (
+              <div id="step-4" className="space-y-5 animate-in slide-in-from-right-4 duration-500">
+                <h2 className="text-xl font-bold text-slate-800 mb-2">Emergencia y Archivos</h2>
+                <div className="grid grid-cols-1 gap-3">
+                  <input name="contactoemergencia" placeholder="Nombre Contacto Emergencia" required pattern={soloLetras} value={formData.contactoemergencia || ""} onChange={handleChange} className="p-3 border rounded-xl text-black bg-slate-50" title="Solo letras permitidas" />
+                  <input name="contactotelefono" placeholder="Teléfono Emergencia (Mín. 10)" required pattern={telefonoRegEx} value={formData.contactotelefono || ""} onChange={handleChange} className="p-3 border rounded-xl text-black bg-slate-50" title="Debe tener al menos 10 números" />
+                </div>
+
+                <div className="bg-blue-50 p-6 rounded-2xl border-2 border-dashed border-blue-200 text-center">
+                  <p className="text-[11px] font-bold text-blue-700 mb-4 uppercase">Subir Documentos (Máx 3 archivos PDF)</p>
+                  <p className="text-[11px] font-bold text-blue-700 mb-4 uppercase">Subir Documentos (Cedula,Carnet y Certificado eps)</p>
+                  
+                  {fileUrls.length < 3 && (
+                    <UploadButton
+                      endpoint="pdfUploader"
+                      onClientUploadComplete={(res) => {
+                        if (res) {
+                          const nuevosArchivos = res.map(f => ({ name: f.name, url: f.url }));
+                          // Agregamos los nuevos archivos a los que ya teníamos (acumulativo)
+                          setFileUrls(prev => [...prev, ...nuevosArchivos].slice(0, 3));
+                        }
+                      }}
+                      onUploadError={(err) => setError(`Error al subir: ${err.message}`)}
+                    />
+                  )}
+
+                  {fileUrls.length > 0 && (
+                    <div className="mt-4 text-left space-y-2">
+                      <p className="text-[10px] font-bold text-slate-500 uppercase">Lista de archivos ({fileUrls.length}/3):</p>
+                      {fileUrls.map((f, i) => (
+                        <div key={i} className="flex justify-between items-center bg-white p-2 rounded-xl border border-blue-100 text-[10px] text-slate-700 font-bold shadow-sm">
+                          <span className="truncate w-40">{f.name}</span>
+                          <button 
+                            type="button" 
+                            onClick={() => setFileUrls(fileUrls.filter((_, index) => index !== i))}
+                            className="text-red-500 hover:text-red-700 font-black px-2"
+                          >
+                            Eliminar
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                
+                <div className="flex gap-2">
+                  <button type="button" onClick={() => setStep(3)} className="flex-1 bg-slate-100 text-slate-500 p-4 rounded-xl font-bold">Atrás</button>
+                  <button type="submit" disabled={loading || fileUrls.length === 0} className="flex-1 bg-emerald-600 text-white p-4 rounded-xl font-bold shadow-lg disabled:bg-slate-300 transition-all hover:bg-emerald-700">
+                    {loading ? "Registrando..." : "Finalizar Registro"}
+                  </button>
+                </div>
+              </div>
+            )}
+          </form>
+        </div>
+      </main>
+    </div>
   );
 }

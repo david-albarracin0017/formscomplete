@@ -15,43 +15,86 @@ export default function AdminClientButtons({ registros }: AdminClientButtonsProp
   const [mensaje, setMensaje] = useState({ text: '', isError: false });
   const [loading, setLoading] = useState(false);
 
-  // --- EXCEL ---
-  const exportarExcel = () => {
-    const encabezados = ["FECHA", "DOCUMENTO", "NOMBRE COMPLETO", "CORREO", "TELÉFONO", "MUNICIPIO", "EPS", "PDFs"];
-    const filas = registros.map(r => [
-      new Date(r.creadoen).toLocaleDateString(),
-      r.numeroidentificacion || 'N/A',
+// --- EXCEL ACTUALIZADO CON NUEVOS CAMPOS ---
+const exportarExcel = () => {
+  const encabezados = [
+    "FECHA", "NOMBRE COMPLETO", "GENERO", "CORREO", "TELÉFONO",
+    "TIPO DOC", "NUM DOC", "NACIMIENTO", "EXPEDICION", "DIRECCION", 
+    "MUNICIPIO", "EPS", "SANGRE", "RH", "EMERGENCIA", "TEL. EMERGENCIA", 
+    "DOC 1", "DOC 2", "DOC 3" 
+  ];
+
+  const filas = registros.map(r => {
+    const links = r.archivos ? r.archivos.map((a: any) => a.ruta) : [];
+    
+    return [
+      r.creadoen ? new Date(r.creadoen).toLocaleDateString() : 'N/A',
       `${r.nombre || ''} ${r.segundonombre || ''} ${r.apellido || ''} ${r.segundoapellido || ''}`.trim(),
+      r.genero || 'N/A',
       r.correo || 'N/A',
       r.telefono || 'N/A',
+      r.tipoidentificacion || 'N/A',
+      r.numeroidentificacion || 'N/A',
+      r.fechanacimiento ? new Date(r.fechanacimiento).toLocaleDateString() : 'N/A',
+      r.fechaexpedicion ? new Date(r.fechaexpedicion).toLocaleDateString() : 'N/A',
+      r.direccion || 'N/A',
       r.municipio || 'N/A',
       r.eps || 'N/A',
-      r.archivos ? r.archivos.map((a: any) => a.ruta).join(' | ') : ''
-    ]);
+      r.tiposangre || 'N/A',
+      r.factorrh || 'N/A',
+      r.contactoemergencia || 'N/A',
+      r.contactotelefono || 'N/A',
+      // En lugar de la URL, usamos un objeto de celda con fórmula de Hipervínculo
+      links[0] ? { f: `HYPERLINK("${links[0]}", "📄 VER")` } : "S/A",
+      links[1] ? { f: `HYPERLINK("${links[1]}", "📄 VER")` } : "S/A",
+      links[2] ? { f: `HYPERLINK("${links[2]}", "📄 VER")` } : "S/A"
+    ];
+  });
 
-    const wb = XLSX.utils.book_new();
-    const ws = XLSX.utils.aoa_to_sheet([encabezados, ...filas]);
+  const wb = XLSX.utils.book_new();
+  const ws = XLSX.utils.aoa_to_sheet([encabezados, ...filas]);
 
-    // Estilos del Excel
-    const estiloEncabezado = {
-      fill: { fgColor: { rgb: "3B82F6" } },
-      font: { color: { rgb: "FFFFFF" }, bold: true },
-      border: { top: { style: "thin" }, bottom: { style: "thin" }, left: { style: "thin" }, right: { style: "thin" } }
-    };
+  // --- ESTILOS DE "BOTÓN" PARA LOS LINKS ---
+  const range = XLSX.utils.decode_range(ws['!ref'] || "A1");
+  for (let R = range.s.r; R <= range.e.r; ++R) {
+    for (let C = range.s.c; C <= range.e.c; ++C) {
+      const addr = XLSX.utils.encode_cell({ c: C, r: R });
+      if (!ws[addr]) continue;
 
-    const range = XLSX.utils.decode_range(ws['!ref'] || "A1");
-    for (let R = range.s.r; R <= range.e.r; ++R) {
-      for (let C = range.s.c; C <= range.e.c; ++C) {
-        const addr = XLSX.utils.encode_cell({ c: C, r: R });
-        if (!ws[addr]) continue;
-        if (R === 0) ws[addr].s = estiloEncabezado;
+      if (R === 0) {
+        // Estilo Encabezado Azul
+        ws[addr].s = {
+          fill: { fgColor: { rgb: "3B82F6" } },
+          font: { color: { rgb: "FFFFFF" }, bold: true },
+          alignment: { horizontal: "center" }
+        };
+      } else if (C >= 16 && ws[addr].v !== "S/A") { 
+        // Estilo de las celdas con Link (Parecido a un botón)
+        ws[addr].s = {
+          font: { color: { rgb: "2563EB" }, bold: true, underline: true },
+          fill: { fgColor: { rgb: "EFF6FF" } }, // Fondo azul muy claro
+          alignment: { horizontal: "center" },
+          border: {
+            top: { style: "thin", color: { rgb: "DBEAFE" } },
+            bottom: { style: "thin", color: { rgb: "DBEAFE" } },
+            left: { style: "thin", color: { rgb: "DBEAFE" } },
+            right: { style: "thin", color: { rgb: "DBEAFE" } }
+          }
+        };
       }
     }
+  }
 
-    ws['!cols'] = [{ wch: 12 }, { wch: 15 }, { wch: 35 }, { wch: 25 }, { wch: 15 }, { wch: 15 }, { wch: 15 }, { wch: 40 }];
-    XLSX.utils.book_append_sheet(wb, ws, "Registros");
-    XLSX.writeFile(wb, "Reporte_Admin.xlsx");
-  };
+  ws['!cols'] = [
+    { wch: 12 }, { wch: 30 }, { wch: 10 }, { wch: 20 }, { wch: 12 },
+    { wch: 15 }, { wch: 15 }, { wch: 12 }, { wch: 12 }, { wch: 20 },
+    { wch: 15 }, { wch: 15 }, { wch: 8 }, { wch: 5 }, { wch: 20 }, { wch: 15 },
+    { wch: 10 }, { wch: 10 }, { wch: 10 } // Columnas de documentos pequeñas
+  ];
+
+  XLSX.utils.book_append_sheet(wb, ws, "Registros");
+  XLSX.writeFile(wb, "Reporte_Inscritos.xlsx");
+};
 
   // --- CAMBIO DE CLAVE ---
   const handleCambioPass = async (e: React.FormEvent) => {
@@ -95,7 +138,7 @@ export default function AdminClientButtons({ registros }: AdminClientButtonsProp
       </button>
 
       {showModal && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-[100] p-4">
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-100 p-4">
           <div className="bg-white rounded-3xl p-8 max-w-sm w-full shadow-2xl">
             <h3 className="text-2xl font-black text-gray-900 mb-6">Cambiar Clave</h3>
             <form onSubmit={handleCambioPass} className="space-y-4">
