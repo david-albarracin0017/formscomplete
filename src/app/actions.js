@@ -1,15 +1,14 @@
 'use server';
 
-import bcrypt from 'bcrypt';
+import bcrypt from 'bcryptjs'; // Cambiado a bcryptjs para compatibilidad con Vercel
 import { cookies } from 'next/headers';
 import { db } from './lib/db';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 
-// --- 1. FUNCIÓN DE REINICIO TOTAL (SOLO PARA EMERGENCIAS) ---
+// --- 1. FUNCIÓN DE REINICIO TOTAL ---
 export async function reiniciarSistemaAdmin() {
   try {
-    // Borramos y recreamos la tabla para asegurar que esté limpia
     await db.query(`DROP TABLE IF EXISTS admins;`);
     await db.query(`
       CREATE TABLE admins (
@@ -19,9 +18,7 @@ export async function reiniciarSistemaAdmin() {
       );
     `);
 
-    // Generamos el hash para la clave inicial 'admin123'
-    const passwordPlana = "admin123";
-    const hashGenerado = await bcrypt.hash(passwordPlana, 10);
+    const hashGenerado = await bcrypt.hash("admin123", 10);
 
     await db.query(
       'INSERT INTO admins (usuario, password_hash) VALUES ($1, $2)',
@@ -30,8 +27,8 @@ export async function reiniciarSistemaAdmin() {
 
     return { success: true, message: "¡Sistema Reiniciado! Usuario: admin | Clave: admin123" };
   } catch (error) {
-    console.error(error);
-    return { success: false, error: "Error al reiniciar: " + error.message };
+    console.error("Error en reinicio:", error);
+    return { success: false, error: "Error de conexión: " + error.message };
   }
 }
 
@@ -40,8 +37,6 @@ export async function loginAdmin(formData) {
   const data = Object.fromEntries(formData.entries());
   const usuario = data.usuario?.trim();
   const password = data.password?.trim();
-
-  let loginExitoso = false;
 
   try {
     const res = await db.query('SELECT * FROM admins WHERE usuario = $1', [usuario]);
@@ -60,30 +55,30 @@ export async function loginAdmin(formData) {
     // Crear la cookie de sesión
     cookies().set('admin_session', 'active_token_xyz', { 
       httpOnly: true, 
-      secure: process.env.NODE_ENV === 'production',
+      secure: true, // Siempre true para Vercel (HTTPS)
       sameSite: 'lax',
       path: '/',
-      maxAge: 60 * 60 * 24 // 1 día
+      maxAge: 60 * 60 * 24 
     });
     
-    loginExitoso = true;
   } catch (error) {
     console.error("Error en login:", error);
     return { error: "Error de conexión con la base de datos." };
   }
 
-  if (loginExitoso) {
-    redirect('/admin');
-  }
+  // El redirect debe estar fuera del try/catch
+  redirect('/admin');
 }
 
-// --- 3. CAMBIAR CONTRASEÑA (DESDE EL PANEL) ---
+// --- 3. CAMBIAR CONTRASEÑA ---
 export async function cambiarPasswordSeguro(oldPass, newPass) {
   try {
     const res = await db.query('SELECT password_hash FROM admins WHERE usuario = $1', ['admin']);
-    const user = res.rows[0];
+    if (res.rows.length === 0) return { success: false, error: "Usuario no encontrado." };
 
+    const user = res.rows[0];
     const match = await bcrypt.compare(oldPass.trim(), user.password_hash);
+    
     if (!match) return { success: false, error: "La contraseña actual no es correcta." };
 
     const nuevoHash = await bcrypt.hash(newPass.trim(), 10);
@@ -91,30 +86,28 @@ export async function cambiarPasswordSeguro(oldPass, newPass) {
     
     return { success: true };
   } catch (error) {
-    return { success: false, error: "No se pudo actualizar la contraseña." };
+    return { success: false, error: "Error al actualizar." };
   }
 }
 
-// --- 4. ACCIONES DE REGISTRO (PERSONAS Y DOCUMENTOS) ---
+// --- 4. REGISTRO DE USUARIOS ---
 export async function registrarUsuario(formData, fileUrls = []) {
   const data = Object.fromEntries(formData.entries());
   try {
-    const queryPersona = `
+    const res = await db.query(`
       INSERT INTO personas (
         nombre, segundonombre, apellido, segundoapellido, genero, telefono, correo, 
         tipoidentificacion, numeroidentificacion, fechanacimiento, fechaexpedicion, 
         direccion, municipio, eps, contactoemergencia, contactotelefono
       ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
       RETURNING id;
-    `;
-    const values = [
+    `, [
       data.nombre, data.segundonombre || '', data.apellido, data.segundoapellido || '',
       data.genero, data.telefono, data.correo, data.tipoidentificacion, data.numeroidentificacion,
       data.fechanacimiento, data.fechaexpedicion, data.direccion, data.municipio,
       data.eps, data.contactoemergencia, data.contactotelefono
-    ];
+    ]);
 
-    const res = await db.query(queryPersona, values);
     const personaId = res.rows[0].id;
 
     for (const file of fileUrls) {
@@ -130,7 +123,12 @@ export async function registrarUsuario(formData, fileUrls = []) {
 }
 
 export async function eliminarUsuario(id) {
-  await db.query('DELETE FROM documentos WHERE personaid = $1', [id]);
-  await db.query('DELETE FROM personas WHERE id = $1', [id]);
-  revalidatePath('/admin');
+  try {
+    await db.query('DELETE FROM documentos WHERE personaid = $1', [id]);
+    await db.query('DELETE FROM personas WHERE id = $1', [id]);
+    revalidatePath('/admin');
+    return { success: true };
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
 }

@@ -1,19 +1,21 @@
 import { Pool } from 'pg';
 
-// Singleton para evitar múltiples instancias de conexión en desarrollo
+// Singleton para evitar fugas de memoria y agotamiento de conexiones en Vercel/Neon
 let pool;
 
-if (!pool) {
-  pool = new Pool({
+if (!global.pool) {
+  global.pool = new Pool({
     connectionString: process.env.DATABASE_URL,
     ssl: {
-      rejectUnauthorized: false,
+      rejectUnauthorized: false, // Requerido para Neon
     },
-    // Añadimos tiempos de espera para evitar que la conexión "muera"
-    connectionTimeoutMillis: 5000,
+    connectionTimeoutMillis: 10000, 
     idleTimeoutMillis: 30000,
+    max: 10, // Límite de conexiones para evitar bloqueos en Neon Free Tier
   });
 }
+
+pool = global.pool;
 
 export const db = {
   query: async (text, params) => {
@@ -21,12 +23,11 @@ export const db = {
     try {
       const res = await pool.query(text, params);
       const duration = Date.now() - start;
-      // Esto te ayudará a ver en la terminal si la DB responde
       console.log('Query ejecutada:', { text, duration, rows: res.rowCount });
       return res;
     } catch (error) {
       console.error('Error en la consulta DB:', error);
-      throw error;
+      throw error; // Lanzamos el error para que actions.js lo capture
     }
   },
 };
