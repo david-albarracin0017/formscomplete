@@ -38,34 +38,25 @@ export default function MultiStepPage() {
 
     if (!formularioValido) return;
 
-    if (step === 2) {
+   if (step === 2) {
     const fn = new Date(formData.fechanacimiento);
     const fe = new Date(formData.fechaexpedicion);
     const hoyDate = new Date();
 
-    // Validar que la fecha de nacimiento no sea futura
-    if (fn >= hoyDate) {
-      setError("La fecha de nacimiento debe ser anterior a hoy.");
-      return;
-    }
-
-    // Lógica para calcular la edad exacta en el momento de la expedición
     let edadAlExpedir = fe.getFullYear() - fn.getFullYear();
     const mes = fe.getMonth() - fn.getMonth();
-    
-    // Ajuste si el mes/día de expedición es anterior al mes/día de nacimiento
     if (mes < 0 || (mes === 0 && fe.getDate() < fn.getDate())) {
       edadAlExpedir--;
     }
 
-    if (edadAlExpedir < 18) {
-      setError("La fecha de expedición debe ser al menos 18 años después del nacimiento.");
+    // Validación estricta de 18 años
+    if (edadAlExpedir !== 18) {
+      setError("La fecha de expedición debe ser en el año que cumplió sus 18 años.");
       return;
     }
 
-    // Validar que la fecha de expedición no sea futura
     if (fe > hoyDate) {
-      setError("La fecha de expedición no puede ser una fecha futura.");
+      setError("La fecha de expedición no puede ser futura.");
       return;
     }
   }
@@ -80,7 +71,16 @@ export default function MultiStepPage() {
       setError("Debes subir los documentos requeridos.");
       return;
     }
-    
+    // Nueva validación de teléfonos duplicados
+    if (formData.telefono === formData.contactotelefono) {
+      setError("El teléfono de emergencia no puede ser el mismo que su teléfono personal.");
+      return;
+    }
+
+    if (fileUrls.length === 0) {
+      setError("Debes subir los documentos requeridos.");
+      return;
+    }
     setLoading(true);
     const data = new FormData();
     Object.entries(formData).forEach(([k, v]) => data.append(k, v as string));

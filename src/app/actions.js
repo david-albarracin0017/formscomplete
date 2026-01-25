@@ -91,26 +91,26 @@ export async function registrarUsuario(formData, fileUrls = []) {
       return { success: false, error: "Seguridad: Máximo 3 archivos permitidos." };
     }
 
-    // 2. Validar Fechas
-   const fnac = new Date(formData.get('fechanacimiento'));
+    const fnac = new Date(formData.get('fechanacimiento'));
     const fexp = new Date(formData.get('fechaexpedicion'));
     const hoy = new Date();
 
-    if (fnac >= hoy) {
-      return { success: false, error: "Fecha de nacimiento inválida." };
-    }
-
-    // Cálculo de mayoría de edad al momento de expedir
+    // 1. Calcular edad al momento de expedir
     let edadAlExpedir = fexp.getFullYear() - fnac.getFullYear();
     const m = fexp.getMonth() - fnac.getMonth();
     if (m < 0 || (m === 0 && fexp.getDate() < fnac.getDate())) {
         edadAlExpedir--;
     }
 
-    if (edadAlExpedir < 18) {
-      return { success: false, error: "Debe haber tenido al menos 18 años al momento de expedir el documento." };
+    // 2. Restricción: Debe ser exactamente a los 18 años
+    if (edadAlExpedir !== 18) {
+      return { 
+        success: false, 
+        error: "La fecha de expedición es inválida. Debe corresponder al periodo en que cumplió 18 años." 
+      };
     }
 
+    // 3. No puede ser una fecha futura
     if (fexp > hoy) {
       return { success: false, error: "La fecha de expedición no puede ser futura." };
     }
