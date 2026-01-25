@@ -77,20 +77,30 @@ export async function logoutAdmin() {
 // --- REGISTRO CON TODAS LAS RESTRICCIONES ---
 export async function registrarUsuario(formData, fileUrls = []) {
   try {
+    const correo = formData.get('correo');
+    
+    // Nueva validación de dominio de correo
+    if (!correo || !correo.endsWith('@universidadmayor.edu.co')) {
+      return { 
+        success: false, 
+        error: "Seguridad: Solo se permiten correos institucionales de @universidadmayor.edu.co" 
+      };
+    }
     // 1. Validar límite de archivos en el servidor
     if (fileUrls.length > 3) {
       return { success: false, error: "Seguridad: Máximo 3 archivos permitidos." };
     }
 
     // 2. Validar Fechas
-    const fnac = new Date(formData.get('fechanacimiento'));
+   const fnac = new Date(formData.get('fechanacimiento'));
     const fexp = new Date(formData.get('fechaexpedicion'));
     const hoy = new Date();
 
-    if (fnac >= hoy.setHours(0,0,0,0)) {
+    if (fnac >= hoy) {
       return { success: false, error: "Fecha de nacimiento inválida." };
     }
 
+    // Cálculo de mayoría de edad al momento de expedir
     let edadAlExpedir = fexp.getFullYear() - fnac.getFullYear();
     const m = fexp.getMonth() - fnac.getMonth();
     if (m < 0 || (m === 0 && fexp.getDate() < fnac.getDate())) {
@@ -98,9 +108,12 @@ export async function registrarUsuario(formData, fileUrls = []) {
     }
 
     if (edadAlExpedir < 18) {
-      return { success: false, error: "Debía ser mayor de 18 años al expedir el documento." };
+      return { success: false, error: "Debe haber tenido al menos 18 años al momento de expedir el documento." };
     }
 
+    if (fexp > hoy) {
+      return { success: false, error: "La fecha de expedición no puede ser futura." };
+    }
     // 3. Insertar Persona
     const res = await db.query(`
     INSERT INTO personas (

@@ -38,7 +38,7 @@ export default async function AdminPanel() {
             <div className="h-8 w-2px bg-slate-200 mx-2 hidden md:block"></div>
             
             <h1 className="text-[#003399] font-black text-xl tracking-tighter hidden md:block uppercase">
-              Gestión <span className="text-[#EAB308]">Administrativa</span>
+              ARL <span className="text-[#EAB308]">Consultorio Juridico</span>
             </h1>
           </div>
 
