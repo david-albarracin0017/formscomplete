@@ -103,7 +103,7 @@ export default function MultiStepPage() {
       <div className="flex items-center gap-4">
         <div className="relative h-12 w-48 bg-white p-1 rounded-lg">
           <NextImage 
-            src="/logo.png" 
+            src="/Universidad_Colegio_Mayor_de_Cundinamarca.png" 
             alt="Logo Unicolmayor"
             fill
             className="object-contain p-1"
