@@ -101,17 +101,21 @@ export default function MultiStepPage() {
       <nav className="bg-[#003399] border-b-4 border-[#EAB308] px-6 py-3 flex justify-between items-center sticky top-0 z-50 shadow-lg">
       {/* SECCIÓN DEL LOGO */}
       <div className="flex items-center gap-4">
-        <div className="relative h-12 w-48 bg-white p-1 rounded-lg">
+        {/* Aumentamos h-12 -> h-16 y w-48 -> w-60. Eliminamos bg-white */}
+        <div className="relative h-16 w-60 transition-all duration-300">
           <NextImage 
             src="/Universidad_Colegio_Mayor_de_Cundinamarca.png" 
             alt="Logo Unicolmayor"
             fill
-            className="object-contain p-1"
+            className="object-contain" // Quitamos el padding para que use todo el espacio
             priority
+            quality={100} // Forzamos la máxima calidad de compresión de Next.js
+            sizes="(max-width: 768px) 100vw, 240px" // Ayuda a mejorar la nitidez en diferentes pantallas
           />
         </div>
-        <div className="h-6 w-1px bg-blue-400/50 mx-2 hidden sm:block"></div>
-        <span className="font-black text-white text-lg tracking-tighter uppercase hidden sm:block">
+        
+        <div className="h-8 w-1px bg-blue-400/50 mx-2 hidden sm:block"></div>
+        <span className="font-black text-white text-xl tracking-tighter uppercase hidden sm:block">
           ARL Registro
         </span>
       </div>
