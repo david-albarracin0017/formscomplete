@@ -112,7 +112,7 @@ export default function MultiStepPage() {
         </div>
         <div className="h-6 w-1px bg-blue-400/50 mx-2 hidden sm:block"></div>
         <span className="font-black text-white text-lg tracking-tighter uppercase hidden sm:block">
-          Inscripciones
+          ARL Registro
         </span>
       </div>
 
@@ -302,7 +302,7 @@ export default function MultiStepPage() {
                       endpoint="pdfUploader"
                       appearance={{
                         button: "bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-xl shadow-md transition-all active:scale-95 text-sm w-full",
-                        allowedContent: "hidden" // Ocultamos el texto pequeño por defecto de UploadThing
+                        allowedContent: "hidden"
                       }}
                       content={{
                         button({ ready }) {
@@ -310,13 +310,27 @@ export default function MultiStepPage() {
                           return "Cargando...";
                         },
                       }}
+                      // CORRECCIÓN AQUÍ: Verificamos la estructura de la respuesta
                       onClientUploadComplete={(res) => {
-                        if (res) {
-                          const nuevosArchivos = res.map(f => ({ name: f.name, url: f.url }));
-                          setFileUrls(prev => [...prev, ...nuevosArchivos].slice(0, 3));
+                        if (res && res.length > 0) {
+                          console.log("Archivos subidos:", res);
+                          const nuevosArchivos = res.map(f => ({ 
+                            name: f.name, 
+                            url: f.url 
+                          }));
+                          
+                          // Actualizamos el estado acumulando los archivos
+                          setFileUrls((prev) => {
+                            const total = [...prev, ...nuevosArchivos];
+                            return total.slice(0, 3); // Mantenemos el límite de 3
+                          });
+                          setError(""); // Limpiamos errores previos al subir con éxito
                         }
                       }}
-                      onUploadError={(err) => setError(`Error: ${err.message}`)}
+                      onUploadError={(err) => {
+                        console.error(err);
+                        setError(`Error al subir: ${err.message}`);
+                      }}
                     />
                   ) : (
                     <div className="bg-emerald-100 text-emerald-700 text-[10px] font-bold py-2 px-4 rounded-lg border border-emerald-200">
