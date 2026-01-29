@@ -296,66 +296,62 @@ export default function MultiStepPage() {
                   </p>
                   
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    {[
-                      { id: "Cedula", label: "Cédula de Ciudadanía" },
-                      { id: "Carnet", label: "Carnet Estudiantil" },
-                      { id: "Matricula", label: "Hoja de Matrícula" },
-                      { id: "EPS", label: "Certificado EPS" }
-                    ].map((doc) => {
-                      // Buscamos si este documento ya fue subido
-                      const archivoEncontrado = fileUrls.find(f => f.name.startsWith(doc.id));
-                      
-                      return (
-                          <div key={doc.id} className={`p-4 rounded-2xl border-2 transition-all ${archivoEncontrado ? 'border-emerald-500 bg-emerald-50' : 'border-dashed border-slate-200 bg-white'}`}>
-                            <div className="flex flex-col gap-2">
-                              <span className={`text-[10px] font-bold uppercase ${archivoEncontrado ? 'text-emerald-700' : 'text-slate-400'}`}>
-                                {doc.label}
+                  {[
+                    { id: "Cedula", label: "Cédula de Ciudadanía" },
+                    { id: "Carnet", label: "Carnet Estudiantil" },
+                    { id: "Matricula", label: "Hoja de Matrícula" },
+                    { id: "EPS", label: "Certificado EPS" }
+                  ].map((doc) => {
+                    const archivoEncontrado = fileUrls.find(f => f.name.startsWith(doc.id));
+                    
+                    return (
+                      <div key={doc.id} className={`p-4 rounded-2xl border-2 transition-all ${archivoEncontrado ? 'border-emerald-500 bg-emerald-50' : 'border-dashed border-slate-200 bg-white'}`}>
+                        <div className="flex flex-col gap-2">
+                          <span className={`text-[10px] font-bold uppercase ${archivoEncontrado ? 'text-emerald-700' : 'text-slate-400'}`}>
+                            {doc.label}
+                          </span>
+                          
+                          {archivoEncontrado ? (
+                            <div className="flex justify-between items-center h-9">
+                              <span className="text-[11px] text-emerald-600 font-medium truncate">
+                                ✓ Documento listo
                               </span>
-                              
-                              {archivoEncontrado ? (
-                                <div className="flex justify-between items-center">
-                                  <span className="text-[11px] text-emerald-600 font-medium truncate max-w-140px">
-                                    ✓ Listo
-                                  </span>
-                                  <button 
-                                    type="button" 
-                                    onClick={() => setFileUrls(fileUrls.filter(f => !f.name.startsWith(doc.id)))}
-                                    className="text-red-500 p-1"
-                                  >
-                                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" /></svg>
-                                  </button>
-                                </div>
-                              ) : (
-                              <UploadButton
-                                endpoint="pdfUploader"
-                                appearance={{
-                                  // Quitamos el padding y márgenes que fuerzan el texto de "No file selected"
-                                  container: "w-full items-start", 
-                                  button: "bg-blue-600 hover:bg-blue-700 text-white text-[11px] font-bold py-2 px-4 rounded-xl w-full after:content-none",
-                                  // OCULTA EL TEXTO DE "PDF (4MB)"
-                                  allowedContent: "hidden" 
-                                }}
-                                content={{
-                                  // PERSONALIZA EL TEXTO DEL BOTÓN
-                                  button({ ready, isUploading }) {
-                                    if (isUploading) return "Subiendo...";
-                                    return `Subir ${doc.id}`;
-                                  },
-                                  // ELIMINA EL TEXTO DE "NO FILE SELECTED"
-                                  allowedContent() { return null; }
-                                }}
-                                onClientUploadComplete={(res) => {
-                                  if (res) {
-                                    const nuevo = { name: `${doc.id} - ${res[0].name}`, url: res[0].url };
-                                    setFileUrls(prev => [...prev, nuevo]);
-                                  }
-                                }}
-                              />
-                            )}
-                          </div>
+                              <button 
+                                type="button" 
+                                onClick={() => setFileUrls(fileUrls.filter(f => !f.name.startsWith(doc.id)))}
+                                className="text-red-500 p-1 hover:bg-red-50 rounded-lg transition-colors"
+                              >
+                                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" /></svg>
+                              </button>
+                            </div>
+                          ) : (
+                            <UploadButton
+                              endpoint="pdfUploader"
+                              appearance={{
+                                container: "w-full overflow-hidden", // Evita que el texto nativo se asome
+                                button: "bg-blue-600 hover:bg-blue-700 text-white text-[11px] font-bold py-2 px-4 rounded-xl w-full border-none shadow-none",
+                                allowedContent: "hidden" 
+                              }}
+                              content={{
+                                button({ ready, isUploading }) {
+                                  if (isUploading) return "Subiendo...";
+                                  return `Adjuntar ${doc.id}`;
+                                },
+                                // Forzamos que cualquier otro texto sea nulo
+                                allowedContent() { return null; } 
+                              }}
+                              onClientUploadComplete={(res) => {
+                                if (res) {
+                                  const nuevo = { name: `${doc.id} - ${res[0].name}`, url: res[0].url };
+                                  setFileUrls(prev => [...prev, nuevo]);
+                                }
+                              }}
+                            />
+                          )}
                         </div>
-                      );
-                    })}
+                      </div>
+                    );
+                  })}
                   </div>
                 </div>
                 
