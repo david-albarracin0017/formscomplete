@@ -329,17 +329,23 @@ export default function MultiStepPage() {
                               <UploadButton
                                 endpoint="pdfUploader"
                                 appearance={{
-                                  // Estilos del botón: Azul, bordes redondeados y texto claro
+                                  // 1. Estilizamos el botón para que se vea profesional
                                   button: "bg-blue-600 hover:bg-blue-700 text-white text-[11px] font-bold py-2 px-4 rounded-xl w-full shadow-sm transition-all active:scale-95",
-                                  allowedContent: "hidden" // Ocultamos el texto pequeño de "PDF (4MB)" para limpiar la vista
+                                  // 2. ESTA ES LA CLAVE: Ocultamos los textos externos feos
+                                  allowedContent: "hidden", 
+                                  container: "w-full", // Asegura que el contenedor no tenga márgenes extra
                                 }}
                                 content={{
-                                  // Aquí es donde personalizas los textos
+                                  // 3. Personalizamos el texto INTERIOR del botón
                                   button({ ready, isUploading }) {
-                                    if (isUploading) return "Subiendo..."; 
-                                    if (ready) return `Adjuntar ${doc.id}`; // Ej: "Adjuntar Cédula"
-                                    return "Iniciando...";
+                                    if (isUploading) return "Subiendo archivo...";
+                                    if (ready) return `Seleccionar ${doc.id}`;
+                                    return "Cargando...";
                                   },
+                                  // 4. Dejamos vacío el texto de "No hay archivo" para que no aparezca
+                                  allowedContent() {
+                                    return null;
+                                  }
                                 }}
                                 onClientUploadComplete={(res) => {
                                   if (res) {
