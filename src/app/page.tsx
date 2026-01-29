@@ -77,8 +77,8 @@ export default function MultiStepPage() {
       return;
     }
 
-    if (fileUrls.length === 0) {
-      setError("Debes subir los documentos requeridos.");
+    if (fileUrls.length < 4) {
+      setError("Debes subir los 4 documentos requeridos para continuar.");
       return;
     }
     setLoading(true);
@@ -278,98 +278,95 @@ export default function MultiStepPage() {
               </div>
             )}
 
-            {/* PASO 4: EMERGENCIA Y ARCHIVOS ACUMULABLES */}
+            {/* PASO 4: EMERGENCIA Y ARCHIVOS PERSONALIZADOS */}
             {step === 4 && (
               <div id="step-4" className="space-y-5 animate-in slide-in-from-right-4 duration-500">
-                <h2 className="text-xl font-bold text-slate-800 mb-2">Emergencia y Archivos</h2>
+                <h2 className="text-xl font-bold text-slate-800 mb-2">Emergencia y Documentos</h2>
+                
                 <div className="grid grid-cols-1 gap-3">
                   <input name="contactoemergencia" placeholder="Nombre Contacto Emergencia" required pattern={soloLetras} value={formData.contactoemergencia || ""} onChange={handleChange} className="p-3 border rounded-xl text-black bg-slate-50" title="Solo letras permitidas" />
                   <input name="contactotelefono" placeholder="Teléfono Emergencia (Mín. 10)" required pattern={telefonoRegEx} value={formData.contactotelefono || ""} onChange={handleChange} className="p-3 border rounded-xl text-black bg-slate-50" title="Debe tener al menos 10 números" />
                 </div>
 
-                <div className="bg-blue-50 p-6 rounded-2xl border-2 border-dashed border-blue-300 flex flex-col items-center group hover:border-blue-500 transition-colors">
-                  <div className="mb-3 p-3 bg-white rounded-full shadow-sm group-hover:scale-110 transition-transform">
-                    <svg className="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-                    </svg>
-                  </div>
+                <div className="space-y-3">
+                  <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Documentación Requerida (PDF)</p>
                   
-                  <p className="text-[12px] font-black text-blue-800 mb-1 uppercase tracking-tight">
-                    Carga tus documentos aquí
-                  </p>
-                  <p className="text-[10px] text-blue-600 mb-4 font-medium">
-                    (Cédula, Carnet estudiantil y Certificado EPS en PDF)
-                  </p>
-                  
-                  {fileUrls.length < 3 ? (
-                    <UploadButton
-                      endpoint="pdfUploader"
-                      appearance={{
-                        button: "bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-xl shadow-md transition-all active:scale-95 text-sm w-full",
-                        allowedContent: "hidden"
-                      }}
-                      content={{
-                        button({ ready }) {
-                          if (ready) return "Seleccionar Archivos";
-                          return "Cargando...";
-                        },
-                      }}
-                      // CORRECCIÓN AQUÍ: Verificamos la estructura de la respuesta
-                      onClientUploadComplete={(res) => {
-                        if (res && res.length > 0) {
-                          console.log("Archivos subidos:", res);
-                          const nuevosArchivos = res.map(f => ({ 
-                            name: f.name, 
-                            url: f.url 
-                          }));
-                          
-                          // Actualizamos el estado acumulando los archivos
-                          setFileUrls((prev) => {
-                            const total = [...prev, ...nuevosArchivos];
-                            return total.slice(0, 3); // Mantenemos el límite de 3
-                          });
-                          setError(""); // Limpiamos errores previos al subir con éxito
-                        }
-                      }}
-                      onUploadError={(err) => {
-                        console.error(err);
-                        setError(`Error al subir: ${err.message}`);
-                      }}
-                    />
-                  ) : (
-                    <div className="bg-emerald-100 text-emerald-700 text-[10px] font-bold py-2 px-4 rounded-lg border border-emerald-200">
-                      ✓ Límite de archivos alcanzado
-                    </div>
-                  )}
-
-                  {/* LISTA DE ARCHIVOS MEJORADA */}
-                  {fileUrls.length > 0 && (
-                    <div className="mt-6 w-full space-y-2">
-                      <p className="text-[10px] font-black text-slate-500 uppercase ml-1">Archivos listos ({fileUrls.length}/3):</p>
-                      {fileUrls.map((f, i) => (
-                        <div key={i} className="flex justify-between items-center bg-white p-3 rounded-xl border border-blue-100 shadow-sm animate-in slide-in-from-bottom-2">
-                          <div className="flex items-center gap-2 overflow-hidden">
-                            <div className="min-w-24px h-6 bg-red-50 text-red-500 rounded flex items-center justify-center text-[10px] font-bold">PDF</div>
-                            <span className="truncate text-[11px] text-slate-700 font-bold">{f.name}</span>
+                  {/* GRILLA DE RECUADROS PERSONALIZADOS */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {[
+                      "Cédula de Ciudadanía",
+                      "Carnet Estudiantil",
+                      "Hoja de Matrícula",
+                      "Certificado EPS"
+                    ].map((docNombre, index) => {
+                      const archivoSubido = fileUrls[index];
+                      return (
+                        <div 
+                          key={index} 
+                          className={`p-4 rounded-2xl border-2 transition-all ${
+                            archivoSubido 
+                              ? 'border-emerald-200 bg-emerald-50' 
+                              : 'border-dashed border-slate-200 bg-slate-50'
+                          }`}
+                        >
+                          <div className="flex flex-col gap-2">
+                            <span className={`text-[10px] font-black uppercase ${archivoSubido ? 'text-emerald-600' : 'text-slate-400'}`}>
+                              {index + 1}. {docNombre}
+                            </span>
+                            
+                            {archivoSubido ? (
+                              <div className="flex justify-between items-center">
+                                <span className="text-[11px] text-emerald-700 font-medium truncate max-w-120px">
+                                  {archivoSubido.name}
+                                </span>
+                                <button 
+                                  type="button" 
+                                  onClick={() => setFileUrls(fileUrls.filter((_, i) => i !== index))}
+                                  className="text-emerald-600 hover:text-red-500 transition-colors"
+                                >
+                                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" /></svg>
+                                </button>
+                              </div>
+                            ) : (
+                              <span className="text-[10px] text-slate-400 italic">Pendiente de subir</span>
+                            )}
                           </div>
-                          <button 
-                            type="button" 
-                            onClick={() => setFileUrls(fileUrls.filter((_, index) => index !== i))}
-                            className="ml-2 text-red-500 hover:bg-red-50 p-1.5 rounded-lg transition-colors"
-                          >
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                            </svg>
-                          </button>
                         </div>
-                      ))}
+                      );
+                    })}
+                  </div>
+
+                  {/* BOTÓN DE SUBIDA (Solo visible si faltan archivos) */}
+                  {fileUrls.length < 4 && (
+                    <div className="mt-4">
+                      <UploadButton
+                        endpoint="pdfUploader"
+                        appearance={{
+                          button: "bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-xl shadow-md transition-all w-full text-sm",
+                          allowedContent: "hidden"
+                        }}
+                        content={{
+                          button({ ready }) { return ready ? `Subir archivo restante (${4 - fileUrls.length})` : "Cargando..."; }
+                        }}
+                        onClientUploadComplete={(res) => {
+                          if (res) {
+                            const nuevos = res.map(f => ({ name: f.name, url: f.url }));
+                            setFileUrls((prev) => [...prev, ...nuevos].slice(0, 4));
+                          }
+                        }}
+                        onUploadError={(err) => setError(`Error: ${err.message}`)}
+                      />
                     </div>
                   )}
                 </div>
-                
-                <div className="flex gap-2">
+
+                <div className="flex gap-2 pt-4">
                   <button type="button" onClick={() => setStep(3)} className="flex-1 bg-slate-100 text-slate-500 p-4 rounded-xl font-bold">Atrás</button>
-                  <button type="submit" disabled={loading || fileUrls.length === 0} className="flex-1 bg-emerald-600 text-white p-4 rounded-xl font-bold shadow-lg disabled:bg-slate-300 transition-all hover:bg-emerald-700">
+                  <button 
+                    type="submit" 
+                    disabled={loading || fileUrls.length < 4} 
+                    className="flex-1 bg-emerald-600 text-white p-4 rounded-xl font-bold shadow-lg disabled:bg-slate-200 disabled:text-slate-400 transition-all hover:bg-emerald-700"
+                  >
                     {loading ? "Registrando..." : "Finalizar Registro"}
                   </button>
                 </div>

@@ -47,7 +47,8 @@ const exportarExcel = () => {
       // En lugar de la URL, usamos un objeto de celda con fórmula de Hipervínculo
       links[0] ? { f: `HYPERLINK("${links[0]}", "📄 VER")` } : "S/A",
       links[1] ? { f: `HYPERLINK("${links[1]}", "📄 VER")` } : "S/A",
-      links[2] ? { f: `HYPERLINK("${links[2]}", "📄 VER")` } : "S/A"
+      links[2] ? { f: `HYPERLINK("${links[2]}", "📄 VER")` } : "S/A",
+      links[3] ? { f: `\HYPERLINK("${links[3]}", "📄 VER")` } : "S/A"
     ];
   });
 
@@ -68,7 +69,7 @@ const exportarExcel = () => {
           font: { color: { rgb: "FFFFFF" }, bold: true },
           alignment: { horizontal: "center" }
         };
-      } else if (C >= 16 && ws[addr].v !== "S/A") { 
+      } else if (C >= 16 && C <= 19 && ws[addr].v !== "S/A") { 
         // Estilo de las celdas con Link (Parecido a un botón)
         ws[addr].s = {
           font: { color: { rgb: "2563EB" }, bold: true, underline: true },

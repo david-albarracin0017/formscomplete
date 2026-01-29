@@ -87,8 +87,8 @@ export async function registrarUsuario(formData, fileUrls = []) {
       };
     }
     // 1. Validar límite de archivos en el servidor
-    if (fileUrls.length > 3) {
-      return { success: false, error: "Seguridad: Máximo 3 archivos permitidos." };
+    if (fileUrls.length !== 4) {
+      return { success: false, error: "Seguridad: Se requieren exactamente 4 archivos." };
     }
 
     const fnac = new Date(formData.get('fechanacimiento'));
