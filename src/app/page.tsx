@@ -329,10 +329,18 @@ export default function MultiStepPage() {
                               <UploadButton
                                 endpoint="pdfUploader"
                                 appearance={{
-                                  button: "bg-blue-600 hover:bg-blue-700 text-white text-[10px] font-bold py-1 px-3 rounded-lg w-full",
-                                  allowedContent: "hidden"
+                                  // Estilos del botón: Azul, bordes redondeados y texto claro
+                                  button: "bg-blue-600 hover:bg-blue-700 text-white text-[11px] font-bold py-2 px-4 rounded-xl w-full shadow-sm transition-all active:scale-95",
+                                  allowedContent: "hidden" // Ocultamos el texto pequeño de "PDF (4MB)" para limpiar la vista
                                 }}
-                                content={{ button({ ready }) { return ready ? "Subir Archivo" : "Cargando..."; } }}
+                                content={{
+                                  // Aquí es donde personalizas los textos
+                                  button({ ready, isUploading }) {
+                                    if (isUploading) return "Subiendo..."; 
+                                    if (ready) return `Adjuntar ${doc.id}`; // Ej: "Adjuntar Cédula"
+                                    return "Iniciando...";
+                                  },
+                                }}
                                 onClientUploadComplete={(res) => {
                                   if (res) {
                                     const nuevo = { name: `${doc.id} - ${res[0].name}`, url: res[0].url };
