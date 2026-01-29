@@ -21,7 +21,7 @@ const exportarExcel = () => {
     "FECHA", "NOMBRE COMPLETO", "GENERO", "CORREO", "TELÉFONO",
     "TIPO DOC", "NUM DOC", "NACIMIENTO", "EXPEDICION", "DIRECCION", 
     "MUNICIPIO", "EPS", "SANGRE", "RH", "EMERGENCIA", "TEL. EMERGENCIA", 
-    "DOC 1", "DOC 2", "DOC 3" 
+    "DOC 1", "DOC 2", "DOC 3" ,"DOC 4" 
   ];
 
   const filas = registros.map(r => {

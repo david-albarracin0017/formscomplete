@@ -283,83 +283,72 @@ export default function MultiStepPage() {
               <div id="step-4" className="space-y-5 animate-in slide-in-from-right-4 duration-500">
                 <h2 className="text-xl font-bold text-slate-800 mb-2">Emergencia y Documentos</h2>
                 
+                {/* Datos de Emergencia */}
                 <div className="grid grid-cols-1 gap-3">
                   <input name="contactoemergencia" placeholder="Nombre Contacto Emergencia" required pattern={soloLetras} value={formData.contactoemergencia || ""} onChange={handleChange} className="p-3 border rounded-xl text-black bg-slate-50" title="Solo letras permitidas" />
                   <input name="contactotelefono" placeholder="Teléfono Emergencia (Mín. 10)" required pattern={telefonoRegEx} value={formData.contactotelefono || ""} onChange={handleChange} className="p-3 border rounded-xl text-black bg-slate-50" title="Debe tener al menos 10 números" />
                 </div>
 
-                <div className="space-y-3">
-                  <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Documentación Requerida (PDF)</p>
+                {/* Casilleros de Documentos */}
+                <div className="space-y-4">
+                  <p className="text-[11px] font-black text-blue-800 uppercase tracking-tight">
+                    Sube los 4 documentos requeridos (Formato PDF):
+                  </p>
                   
-                  {/* GRILLA DE RECUADROS PERSONALIZADOS */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     {[
-                      "Cédula de Ciudadanía",
-                      "Carnet Estudiantil",
-                      "Hoja de Matrícula",
-                      "Certificado EPS"
-                    ].map((docNombre, index) => {
-                      const archivoSubido = fileUrls[index];
+                      { id: "Cedula", label: "Cédula de Ciudadanía" },
+                      { id: "Carnet", label: "Carnet Estudiantil" },
+                      { id: "Matricula", label: "Hoja de Matrícula" },
+                      { id: "EPS", label: "Certificado EPS" }
+                    ].map((doc) => {
+                      // Buscamos si este documento ya fue subido
+                      const archivoEncontrado = fileUrls.find(f => f.name.startsWith(doc.id));
+                      
                       return (
-                        <div 
-                          key={index} 
-                          className={`p-4 rounded-2xl border-2 transition-all ${
-                            archivoSubido 
-                              ? 'border-emerald-200 bg-emerald-50' 
-                              : 'border-dashed border-slate-200 bg-slate-50'
-                          }`}
-                        >
+                        <div key={doc.id} className={`p-4 rounded-2xl border-2 transition-all ${archivoEncontrado ? 'border-emerald-500 bg-emerald-50' : 'border-dashed border-slate-200 bg-white'}`}>
                           <div className="flex flex-col gap-2">
-                            <span className={`text-[10px] font-black uppercase ${archivoSubido ? 'text-emerald-600' : 'text-slate-400'}`}>
-                              {index + 1}. {docNombre}
+                            <span className={`text-[10px] font-bold uppercase ${archivoEncontrado ? 'text-emerald-700' : 'text-slate-400'}`}>
+                              {doc.label}
                             </span>
                             
-                            {archivoSubido ? (
+                            {archivoEncontrado ? (
                               <div className="flex justify-between items-center">
-                                <span className="text-[11px] text-emerald-700 font-medium truncate max-w-120px">
-                                  {archivoSubido.name}
+                                <span className="text-[11px] text-emerald-600 font-medium truncate max-w-140px">
+                                  ✓ {archivoEncontrado.name.split(" - ")[1]}
                                 </span>
                                 <button 
                                   type="button" 
-                                  onClick={() => setFileUrls(fileUrls.filter((_, i) => i !== index))}
-                                  className="text-emerald-600 hover:text-red-500 transition-colors"
+                                  onClick={() => setFileUrls(fileUrls.filter(f => !f.name.startsWith(doc.id)))}
+                                  className="text-red-500 hover:bg-red-100 p-1 rounded-full"
                                 >
-                                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" /></svg>
+                                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" /></svg>
                                 </button>
                               </div>
                             ) : (
-                              <span className="text-[10px] text-slate-400 italic">Pendiente de subir</span>
+                              <UploadButton
+                                endpoint="pdfUploader"
+                                appearance={{
+                                  button: "bg-blue-600 hover:bg-blue-700 text-white text-[10px] font-bold py-1 px-3 rounded-lg w-full",
+                                  allowedContent: "hidden"
+                                }}
+                                content={{ button({ ready }) { return ready ? "Subir Archivo" : "Cargando..."; } }}
+                                onClientUploadComplete={(res) => {
+                                  if (res) {
+                                    const nuevo = { name: `${doc.id} - ${res[0].name}`, url: res[0].url };
+                                    setFileUrls(prev => [...prev, nuevo]);
+                                  }
+                                }}
+                              />
                             )}
                           </div>
                         </div>
                       );
                     })}
                   </div>
-
-                  {/* BOTÓN DE SUBIDA (Solo visible si faltan archivos) */}
-                  {fileUrls.length < 4 && (
-                    <div className="mt-4">
-                      <UploadButton
-                        endpoint="pdfUploader"
-                        appearance={{
-                          button: "bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-xl shadow-md transition-all w-full text-sm",
-                          allowedContent: "hidden"
-                        }}
-                        content={{
-                          button({ ready }) { return ready ? `Subir archivo restante (${4 - fileUrls.length})` : "Cargando..."; }
-                        }}
-                        onClientUploadComplete={(res) => {
-                          if (res) {
-                            const nuevos = res.map(f => ({ name: f.name, url: f.url }));
-                            setFileUrls((prev) => [...prev, ...nuevos].slice(0, 4));
-                          }
-                        }}
-                        onUploadError={(err) => setError(`Error: ${err.message}`)}
-                      />
-                    </div>
-                  )}
                 </div>
-
+                
+                {/* Botones de navegación */}
                 <div className="flex gap-2 pt-4">
                   <button type="button" onClick={() => setStep(3)} className="flex-1 bg-slate-100 text-slate-500 p-4 rounded-xl font-bold">Atrás</button>
                   <button 
