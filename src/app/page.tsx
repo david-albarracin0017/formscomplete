@@ -306,46 +306,43 @@ export default function MultiStepPage() {
                       const archivoEncontrado = fileUrls.find(f => f.name.startsWith(doc.id));
                       
                       return (
-                        <div key={doc.id} className={`p-4 rounded-2xl border-2 transition-all ${archivoEncontrado ? 'border-emerald-500 bg-emerald-50' : 'border-dashed border-slate-200 bg-white'}`}>
-                          <div className="flex flex-col gap-2">
-                            <span className={`text-[10px] font-bold uppercase ${archivoEncontrado ? 'text-emerald-700' : 'text-slate-400'}`}>
-                              {doc.label}
-                            </span>
-                            
-                            {archivoEncontrado ? (
-                              <div className="flex justify-between items-center">
-                                <span className="text-[11px] text-emerald-600 font-medium truncate max-w-140px">
-                                  ✓ {archivoEncontrado.name.split(" - ")[1]}
-                                </span>
-                                <button 
-                                  type="button" 
-                                  onClick={() => setFileUrls(fileUrls.filter(f => !f.name.startsWith(doc.id)))}
-                                  className="text-red-500 hover:bg-red-100 p-1 rounded-full"
-                                >
-                                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" /></svg>
-                                </button>
-                              </div>
-                            ) : (
+                          <div key={doc.id} className={`p-4 rounded-2xl border-2 transition-all ${archivoEncontrado ? 'border-emerald-500 bg-emerald-50' : 'border-dashed border-slate-200 bg-white'}`}>
+                            <div className="flex flex-col gap-2">
+                              <span className={`text-[10px] font-bold uppercase ${archivoEncontrado ? 'text-emerald-700' : 'text-slate-400'}`}>
+                                {doc.label}
+                              </span>
+                              
+                              {archivoEncontrado ? (
+                                <div className="flex justify-between items-center">
+                                  <span className="text-[11px] text-emerald-600 font-medium truncate max-w-140px">
+                                    ✓ Listo
+                                  </span>
+                                  <button 
+                                    type="button" 
+                                    onClick={() => setFileUrls(fileUrls.filter(f => !f.name.startsWith(doc.id)))}
+                                    className="text-red-500 p-1"
+                                  >
+                                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" /></svg>
+                                  </button>
+                                </div>
+                              ) : (
                               <UploadButton
                                 endpoint="pdfUploader"
                                 appearance={{
-                                  // 1. Estilizamos el botón para que se vea profesional
-                                  button: "bg-blue-600 hover:bg-blue-700 text-white text-[11px] font-bold py-2 px-4 rounded-xl w-full shadow-sm transition-all active:scale-95",
-                                  // 2. ESTA ES LA CLAVE: Ocultamos los textos externos feos
-                                  allowedContent: "hidden", 
-                                  container: "w-full", // Asegura que el contenedor no tenga márgenes extra
+                                  // Quitamos el padding y márgenes que fuerzan el texto de "No file selected"
+                                  container: "w-full items-start", 
+                                  button: "bg-blue-600 hover:bg-blue-700 text-white text-[11px] font-bold py-2 px-4 rounded-xl w-full after:content-none",
+                                  // OCULTA EL TEXTO DE "PDF (4MB)"
+                                  allowedContent: "hidden" 
                                 }}
                                 content={{
-                                  // 3. Personalizamos el texto INTERIOR del botón
+                                  // PERSONALIZA EL TEXTO DEL BOTÓN
                                   button({ ready, isUploading }) {
-                                    if (isUploading) return "Subiendo archivo...";
-                                    if (ready) return `Seleccionar ${doc.id}`;
-                                    return "Cargando...";
+                                    if (isUploading) return "Subiendo...";
+                                    return `Subir ${doc.id}`;
                                   },
-                                  // 4. Dejamos vacío el texto de "No hay archivo" para que no aparezca
-                                  allowedContent() {
-                                    return null;
-                                  }
+                                  // ELIMINA EL TEXTO DE "NO FILE SELECTED"
+                                  allowedContent() { return null; }
                                 }}
                                 onClientUploadComplete={(res) => {
                                   if (res) {
