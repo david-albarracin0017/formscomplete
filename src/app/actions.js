@@ -79,30 +79,31 @@ export async function registrarUsuario(formData, fileUrls = []) {
   try {
     const correo = formData.get('correo');
     
-    // Nueva validación de dominio de correo
+    // Validación de dominio de correo
     if (!correo || !correo.endsWith('@universidadmayor.edu.co')) {
       return { 
         success: false, 
         error: "Seguridad: Solo se permiten correos institucionales de @universidadmayor.edu.co" 
       };
     }
-    // 1. Validar límite de archivos en el servidor
+
+    // 1. Validar límite de archivos
     if (fileUrls.length !== 4) {
       return { success: false, error: "Seguridad: Se requieren exactamente 4 archivos." };
     }
 
-    const fnac = new Date(formData.get('fechanacimiento'));
-    const fexp = new Date(formData.get('fechaexpedicion'));
+    // Normalización de fechas para evitar errores de zona horaria en móviles
+    const fnac = new Date(formData.get('fechanacimiento') + 'T00:00:00');
+    const fexp = new Date(formData.get('fechaexpedicion') + 'T00:00:00');
     const hoy = new Date();
 
-    // 1. Calcular edad al momento de expedir
+    // Calcular edad al momento de expedir
     let edadAlExpedir = fexp.getFullYear() - fnac.getFullYear();
     const m = fexp.getMonth() - fnac.getMonth();
     if (m < 0 || (m === 0 && fexp.getDate() < fnac.getDate())) {
         edadAlExpedir--;
     }
 
-    // 2. Restricción: Debe ser exactamente a los 18 años
     if (edadAlExpedir !== 18) {
       return { 
         success: false, 
@@ -110,29 +111,28 @@ export async function registrarUsuario(formData, fileUrls = []) {
       };
     }
 
-    // 3. No puede ser una fecha futura
     if (fexp > hoy) {
       return { success: false, error: "La fecha de expedición no puede ser futura." };
     }
+
     // 3. Insertar Persona
     const res = await db.query(`
-    INSERT INTO personas (
-      nombre, segundonombre, apellido, segundoapellido, genero, telefono, correo, 
-      tipoidentificacion, numeroidentificacion, fechanacimiento, fechaexpedicion, 
-      direccion, municipio, eps, tiposangre, factorrh, contactoemergencia, contactotelefono
-    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)
-    RETURNING id;
-  `, [
-    formData.get('nombre'), formData.get('segundonombre') || '',
-    formData.get('apellido'), formData.get('segundoapellido') || '',
-    formData.get('genero'), formData.get('telefono'), formData.get('correo'),
-    formData.get('tipoidentificacion'), formData.get('numeroidentificacion'),
-    formData.get('fechanacimiento'), formData.get('fechaexpedicion'),
-    formData.get('direccion'), formData.get('municipio'), formData.get('eps'),
-    formData.get('tiposangre'), // <-- NUEVO
-    formData.get('factorrh'),   // <-- NUEVO
-    formData.get('contactoemergencia'), formData.get('contactotelefono')
-  ]);
+      INSERT INTO personas (
+        nombre, segundonombre, apellido, segundoapellido, genero, telefono, correo, 
+        tipoidentificacion, numeroidentificacion, fechanacimiento, fechaexpedicion, 
+        direccion, municipio, eps, tiposangre, factorrh, contactoemergencia, contactotelefono
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)
+      RETURNING id;
+    `, [
+      formData.get('nombre'), formData.get('segundonombre') || '',
+      formData.get('apellido'), formData.get('segundoapellido') || '',
+      formData.get('genero'), formData.get('telefono'), formData.get('correo'),
+      formData.get('tipoidentificacion'), formData.get('numeroidentificacion'),
+      formData.get('fechanacimiento'), formData.get('fechaexpedicion'),
+      formData.get('direccion'), formData.get('municipio'), formData.get('eps'),
+      formData.get('tiposangre'), formData.get('factorrh'),
+      formData.get('contactoemergencia'), formData.get('contactotelefono')
+    ]);
 
     const personaId = res.rows[0].id;
 
@@ -144,9 +144,23 @@ export async function registrarUsuario(formData, fileUrls = []) {
 
     revalidatePath('/admin');
     return { success: true };
+
   } catch (error) {
-    console.error(error);
-    return { success: false, error: "Error al guardar en base de datos." };
+    console.error("Detalle del error en servidor:", error);
+
+    // VALIDACIÓN CLAVE: Si el error es por duplicado (Cédula o Correo ya existen)
+    if (error.code === '23505') {
+      return { 
+        success: false, 
+        error: "Ya existe un registro con este número de identificación o correo electrónico." 
+      };
+    }
+
+    // Error genérico para otros fallos de base de datos o conexión
+    return { 
+      success: false, 
+      error: "Error al guardar en la base de datos. Verifique su conexión e intente de nuevo." 
+    };
   }
 }
 // --- ELIMINAR REGISTRO ---
