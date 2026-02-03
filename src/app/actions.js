@@ -77,8 +77,10 @@ export async function logoutAdmin() {
 // --- REGISTRO CON TODAS LAS RESTRICCIONES ---
 export async function registrarUsuario(formData, fileUrls = []) {
   try {
+    // 1. Extraer datos básicos para validación rápida
     const correo = formData.get('correo');
-    
+    const numeroIdentificacion = formData.get('numeroidentificacion');
+
     // Validación de dominio de correo
     if (!correo || !correo.endsWith('@universidadmayor.edu.co')) {
       return { 
@@ -87,12 +89,27 @@ export async function registrarUsuario(formData, fileUrls = []) {
       };
     }
 
-    // 1. Validar límite de archivos
+    // --- VALIDACIÓN DE EXISTENCIA PREVIA (Rápida) ---
+    // Usamos SELECT 1 para que la base de datos solo confirme la existencia sin cargar datos pesados
+    const usuarioExistente = await db.query(
+      'SELECT 1 FROM personas WHERE correo = $1 OR numeroidentificacion = $2 LIMIT 1',
+      [correo, numeroIdentificacion]
+    );
+
+    if (usuarioExistente.rows.length > 0) {
+      return { 
+        success: false, 
+        error: "Ya existe un registro con este número de identificación o correo electrónico." 
+      };
+    }
+    // ------------------------------------------------
+
+    // 2. Validar límite de archivos
     if (fileUrls.length !== 4) {
       return { success: false, error: "Seguridad: Se requieren exactamente 4 archivos." };
     }
 
-    // Normalización de fechas para evitar errores de zona horaria en móviles
+    // Normalización de fechas
     const fnac = new Date(formData.get('fechanacimiento') + 'T00:00:00');
     const fexp = new Date(formData.get('fechaexpedicion') + 'T00:00:00');
     const hoy = new Date();
@@ -126,8 +143,8 @@ export async function registrarUsuario(formData, fileUrls = []) {
     `, [
       formData.get('nombre'), formData.get('segundonombre') || '',
       formData.get('apellido'), formData.get('segundoapellido') || '',
-      formData.get('genero'), formData.get('telefono'), formData.get('correo'),
-      formData.get('tipoidentificacion'), formData.get('numeroidentificacion'),
+      formData.get('genero'), formData.get('telefono'), correo,
+      formData.get('tipoidentificacion'), numeroIdentificacion,
       formData.get('fechanacimiento'), formData.get('fechaexpedicion'),
       formData.get('direccion'), formData.get('municipio'), formData.get('eps'),
       formData.get('tiposangre'), formData.get('factorrh'),
@@ -147,8 +164,8 @@ export async function registrarUsuario(formData, fileUrls = []) {
 
   } catch (error) {
     console.error("Detalle del error en servidor:", error);
-
-    // VALIDACIÓN CLAVE: Si el error es por duplicado (Cédula o Correo ya existen)
+    
+    // Mantenemos esto como última línea de defensa por si ocurre un choque simultáneo (concurrencia)
     if (error.code === '23505') {
       return { 
         success: false, 
@@ -156,7 +173,6 @@ export async function registrarUsuario(formData, fileUrls = []) {
       };
     }
 
-    // Error genérico para otros fallos de base de datos o conexión
     return { 
       success: false, 
       error: "Error al guardar en la base de datos. Verifique su conexión e intente de nuevo." 
