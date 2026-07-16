@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 // Importamos las acciones necesarias
-import { cambiarPasswordSeguro, logoutAdmin } from '../actions'; 
+import { cambiarPasswordSeguro, logoutAdmin, borrarTodosRegistros } from '../actions'; 
 import XLSX from 'xlsx-js-style';
 
 interface AdminClientButtonsProps {
@@ -14,7 +14,22 @@ export default function AdminClientButtons({ registros }: AdminClientButtonsProp
   const [form, setForm] = useState({ oldPass: '', newPass: '', confirmPass: '' });
   const [mensaje, setMensaje] = useState({ text: '', isError: false });
   const [loading, setLoading] = useState(false);
+// 👇 AQUÍ VA EL PASO B: La función de borrar todo
+  const handleBorrarTodo = async () => {
+    const confirmacion = confirm("¡ADVERTENCIA EXTREMA!\n\n¿Estás absolutamente seguro de que deseas BORRAR TODOS los registros del sistema? Esta acción NO se puede deshacer.");
+    
+    if (confirmacion) {
+      setLoading(true);
+      const res = await borrarTodosRegistros();
+      setLoading(false);
 
+      if (res.success) {
+        alert("Todos los registros han sido eliminados con éxito.");
+      } else {
+        alert(res.error || "Hubo un error al intentar borrar los registros.");
+      }
+    }
+  };
 // --- EXCEL ACTUALIZADO CON NUEVOS CAMPOS ---
 const exportarExcel = () => {
   const encabezados = [
@@ -124,6 +139,14 @@ const exportarExcel = () => {
       
       <button onClick={exportarExcel} className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg text-xs font-bold transition-all shadow-lg">
         Excel
+      </button>
+      {/* NUEVO BOTÓN DE BORRAR TODO */}
+      <button 
+        onClick={handleBorrarTodo} 
+        disabled={loading}
+        className="bg-red-800 hover:bg-red-900 text-white px-4 py-2 rounded-lg text-xs font-bold transition-all shadow-lg"
+      >
+        BORRAR
       </button>
 
       {/* BOTÓN DE SALIR CORREGIDO */}

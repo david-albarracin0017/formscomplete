@@ -196,3 +196,18 @@ export async function eliminarUsuario(id) {
     return { success: false, error: "No se pudo eliminar el registro." };
   }
 }
+// --- BORRAR TODOS LOS REGISTROS ---
+export async function borrarTodosRegistros() {
+  try {
+    // Al borrar la tabla personas, si tienes configurado ON DELETE CASCADE 
+    // en la base de datos, los documentos asociados también se borrarán.
+    await db.query('DELETE FROM personas');
+    
+    // Refrescar la página para que la tabla se actualice visualmente
+    revalidatePath('/admin');
+    return { success: true };
+  } catch (error) {
+    console.error("Error al borrar todo:", error);
+    return { success: false, error: "No se pudieron borrar todos los registros." };
+  }
+}
